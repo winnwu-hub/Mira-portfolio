@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizTrip English — Business Trip Speaking</title>
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+.screen { display: none; width: 100%; height: 100%; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ============================================================
+   SCREEN: START
+   ============================================================ */
+#screen-start {
+  align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #0f172a 0%, #1a2740 40%, #1e3a5f 100%);
+  text-align: center; color: #fff; padding: 40px;
+}
+#screen-start .logo { font-size: 64px; margin-bottom: 16px; }
+#screen-start h1 { font-size: 42px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+#screen-start .subtitle { font-size: 18px; color: #94a3b8; margin-bottom: 32px; }
+#screen-start .story-intro {
+  max-width: 560px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+  padding: 28px 32px; margin-bottom: 36px; line-height: 1.7;
+  font-size: 15px; color: #cbd5e1; text-align: left;
+}
+#screen-start .story-intro strong { color: #60a5fa; }
+.btn-start {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 48px; font-size: 18px; font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff; border: none; border-radius: 50px;
+  cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+}
+.btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 32px rgba(59,130,246,0.55); }
+
+/* ============================================================
+   SCREEN: HUB (Task Center)
+   ============================================================ */
+#screen-hub {
+  background: linear-gradient(160deg, #0f172a 0%, #1a2740 40%, #1e3a5f 100%);
+  color: #fff; padding: 48px; align-items: center;
+}
+#screen-hub .hub-header { text-align: center; margin-bottom: 44px; }
+#screen-hub .hub-header h2 { font-size: 30px; font-weight: 700; margin-bottom: 6px; }
+#screen-hub .hub-header p { color: #94a3b8; font-size: 15px; }
+.task-cards { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; max-width: 960px; }
+.task-card {
+  width: 280px; background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1); border-radius: 20px;
+  padding: 32px 24px; text-align: center; cursor: pointer;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+  position: relative; overflow: hidden;
+}
+.task-card:hover:not(.locked) { transform: translateY(-6px); }
+.task-card.locked { opacity: 0.45; cursor: not-allowed; }
+.task-card .icon { font-size: 48px; margin-bottom: 16px; }
+.task-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.task-card .card-subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+.task-card .card-badge {
+  display: inline-block; padding: 4px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.card-badge.completed { background: rgba(34,197,94,0.2); color: #4ade80; }
+.card-badge.current { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.card-badge.locked-badge { background: rgba(148,163,184,0.15); color: #94a3b8; }
+.task-card .card-score { margin-top: 10px; font-size: 13px; color: #fbbf24; }
+.task-card .card-lock { font-size: 28px; margin-top: 8px; }
+
+/* scene-specific card accents */
+.task-card.card-airport { border-color: rgba(59,130,246,0.3); }
+.task-card.card-airport:hover:not(.locked) { border-color: #3b82f6; box-shadow: 0 8px 32px rgba(59,130,246,0.2); }
+.task-card.card-meeting { border-color: rgba(139,92,246,0.3); }
+.task-card.card-meeting:hover:not(.locked) { border-color: #8b5cf6; box-shadow: 0 8px 32px rgba(139,92,246,0.2); }
+.task-card.card-dinner { border-color: rgba(245,158,11,0.3); }
+.task-card.card-dinner:hover:not(.locked) { border-color: #f59e0b; box-shadow: 0 8px 32px rgba(245,158,11,0.2); }
+
+/* ============================================================
+   SCREEN: SCENE (Briefing / Prep / Mission / Debrief)
+   ============================================================ */
+#screen-scene { flex-direction: column; background: #f8fafc; }
+
+/* -- top bar -- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0;
+  min-height: 54px; flex-shrink: 0;
+}
+.topbar .back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; color: #64748b; font-size: 14px;
+  cursor: pointer; padding: 6px 12px; border-radius: 8px;
+  transition: background 0.15s;
+}
+.topbar .back-btn:hover { background: #f1f5f9; }
+.topbar .scene-title { font-size: 16px; font-weight: 700; color: #1e293b; }
+.topbar .phase-indicator {
+  font-size: 13px; color: #64748b;
+  background: #f1f5f9; padding: 4px 12px; border-radius: 12px;
+}
+
+/* -- main content area -- */
+.scene-content {
+  flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.scene-content.mission-mode { align-items: stretch; padding: 0; }
+
+/* -- phase panels -- */
+.phase-panel { display: none; width: 100%; max-width: 640px; }
+.phase-panel.active { display: block; }
+.phase-panel h2 { font-size: 26px; font-weight: 700; color: #1e293b; margin-bottom: 20px; }
+.phase-panel .phase-icon { font-size: 56px; margin-bottom: 16px; text-align: center; }
+
+/* Briefing */
+.briefing-card {
+  background: #fff; border-radius: 16px; padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  line-height: 1.8; font-size: 15px; color: #475569;
+}
+.briefing-card .highlight { color: #2563eb; font-weight: 600; }
+.briefing-card .goal-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.goal-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; background: #eff6ff; color: #2563eb;
+  border-radius: 20px; font-size: 13px; font-weight: 500;
+}
+
+/* Prep */
+.prep-section { margin-bottom: 24px; }
+.prep-section h3 { font-size: 17px; font-weight: 700; color: #334155; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }
+.vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vocab-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: #fff; border-radius: 10px;
+  border: 1px solid #e2e8f0; font-size: 14px;
+}
+.vocab-item .en { font-weight: 600; color: #1e293b; }
+.vocab-item .zh { color: #64748b; font-size: 13px; }
+.vocab-item .speak-btn {
+  background: none; border: none; font-size: 16px; cursor: pointer;
+  padding: 4px; border-radius: 6px; transition: background 0.15s;
+}
+.vocab-item .speak-btn:hover { background: #f1f5f9; }
+
+.structure-item {
+  padding: 10px 16px; background: #fff; border-radius: 10px;
+  border: 1px solid #e2e8f0; margin-bottom: 8px; font-size: 14px;
+}
+.structure-item .template { font-weight: 600; color: #1e293b; }
+.structure-item .slots { color: #8b5cf6; font-size: 13px; }
+
+/* Prep mini-exercise */
+.prep-exercise {
+  background: #fff; border-radius: 16px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 2px dashed #e2e8f0;
+}
+.prep-exercise h3 { font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 16px; }
+.prep-exercise .ex-prompt { font-size: 15px; color: #475569; margin-bottom: 12px; }
+.ex-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.ex-option {
+  padding: 8px 18px; border-radius: 24px; border: 2px solid #e2e8f0;
+  background: #fff; cursor: pointer; font-size: 14px; transition: all 0.15s;
+}
+.ex-option:hover { border-color: #3b82f6; background: #eff6ff; }
+.ex-option.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+.ex-option.wrong { border-color: #dc2626; background: #fef2f2; color: #991b1b; }
+
+/* -- bottom bar -- */
+.bottombar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: #fff; border-top: 1px solid #e2e8f0;
+  min-height: 56px; flex-shrink: 0; gap: 12px;
+}
+.bottombar .mode-switcher { display: flex; gap: 6px; }
+.bottombar .action-area { display: flex; gap: 10px; align-items: center; }
+
+.btn-mode {
+  padding: 6px 14px; border-radius: 20px; border: 2px solid #e2e8f0;
+  background: #fff; cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: all 0.15s; color: #64748b;
+}
+.btn-mode:hover { border-color: #cbd5e1; }
+.btn-mode.active-guided { border-color: #16a34a; background: #dcfce7; color: #166534; }
+.btn-mode.active-semi { border-color: #f59e0b; background: #fef9c3; color: #92400e; }
+.btn-mode.active-free { border-color: #dc2626; background: #fef2f2; color: #991b1b; }
+
+.btn-action {
+  padding: 10px 28px; border-radius: 24px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #f1f5f9; color: #475569; }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-success { background: #16a34a; color: #fff; }
+.btn-success:hover { background: #15803d; }
+
+/* ============================================================
+   MISSION: DIALOGUE AREA
+   ============================================================ */
+.mission-container {
+  display: flex; flex-direction: column; height: 100%;
+}
+.chat-area {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.chat-area.scene-airport { background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%); }
+.chat-area.scene-meeting { background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%); }
+.chat-area.scene-dinner { background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%); }
+
+.msg-bubble {
+  max-width: 75%; padding: 12px 18px; border-radius: 18px;
+  font-size: 15px; line-height: 1.55; position: relative;
+  animation: msgIn 0.3s ease-out;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.msg-npc {
+  align-self: flex-start; background: #fff; color: #1e293b;
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.msg-npc .npc-label { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px; }
+.msg-user {
+  align-self: flex-end; background: #2563eb; color: #fff;
+  border-bottom-right-radius: 6px;
+}
+.msg-recast {
+  align-self: flex-start; background: #dcfce7; color: #166534;
+  border: 1px solid #bbf7d0; font-size: 13px;
+  border-bottom-left-radius: 6px;
+}
+.msg-recast .recast-label { font-size: 11px; font-weight: 700; color: #16a34a; margin-bottom: 2px; }
+
+.msg-actions { display: flex; gap: 6px; margin-top: 6px; }
+.msg-btn {
+  background: rgba(255,255,255,0.2); border: none; color: inherit;
+  font-size: 12px; padding: 3px 10px; border-radius: 10px;
+  cursor: pointer; opacity: 0.7; transition: opacity 0.15s;
+}
+.msg-npc .msg-btn { background: #f1f5f9; color: #64748b; }
+.msg-btn:hover { opacity: 1; }
+
+/* typing indicator */
+.typing-indicator {
+  align-self: flex-start; background: #fff; padding: 14px 18px;
+  border-radius: 18px; border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.typing-dots { display: flex; gap: 4px; }
+.typing-dots span {
+  width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+.typing-dots span:nth-child(1) { animation-delay: 0s; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); } 40% { transform: scale(1); } }
+
+/* input area in mission */
+.mission-input-area {
+  padding: 16px 24px; background: #fff; border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+.guided-options { display: flex; flex-direction: column; gap: 8px; }
+.guided-option {
+  text-align: left; padding: 12px 18px; border-radius: 12px;
+  border: 2px solid #e2e8f0; background: #fff; cursor: pointer;
+  font-size: 15px; transition: all 0.15s;
+}
+.guided-option:hover { border-color: #3b82f6; background: #eff6ff; }
+.guided-option.picked-correct { border-color: #16a34a; background: #dcfce7; }
+.guided-option.picked-wrong { border-color: #dc2626; background: #fef2f2; }
+
+.semi-guided-area { display: flex; flex-direction: column; gap: 8px; }
+.semi-hints { display: flex; gap: 6px; flex-wrap: wrap; }
+.semi-hint {
+  padding: 4px 12px; background: #fef9c3; border-radius: 14px;
+  font-size: 13px; color: #92400e; cursor: pointer; border: 1px solid #fde68a;
+  transition: background 0.15s;
+}
+.semi-hint:hover { background: #fde68a; }
+.semi-input-row { display: flex; gap: 8px; }
+.semi-input-row input {
+  flex: 1; padding: 10px 16px; border: 2px solid #e2e8f0; border-radius: 12px;
+  font-size: 15px; outline: none; transition: border-color 0.15s;
+}
+.semi-input-row input:focus { border-color: #f59e0b; }
+
+.free-area { display: flex; gap: 8px; }
+.free-area input {
+  flex: 1; padding: 10px 16px; border: 2px solid #e2e8f0; border-radius: 12px;
+  font-size: 15px; outline: none; transition: border-color 0.15s;
+}
+.free-area input:focus { border-color: #dc2626; }
+
+/* ============================================================
+   DEBRIEF
+   ============================================================ */
+.debrief-panel { max-width: 560px; margin: 0 auto; }
+.debrief-header { text-align: center; margin-bottom: 24px; }
+.debrief-header .big-emoji { font-size: 56px; }
+.debrief-header h2 { font-size: 24px; color: #1e293b; margin-top: 8px; }
+.score-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.score-row { display: flex; align-items: center; gap: 12px; }
+.score-label { width: 90px; font-size: 14px; font-weight: 600; color: #475569; text-align: right; flex-shrink: 0; }
+.score-track {
+  flex: 1; height: 22px; background: #f1f5f9; border-radius: 11px; overflow: hidden;
+}
+.score-fill {
+  height: 100%; border-radius: 11px; transition: width 0.8s ease-out;
+}
+.score-fill.task-fill { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+.score-fill.accuracy-fill { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+.score-fill.register-fill { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.score-pct { width: 44px; font-size: 14px; font-weight: 700; color: #1e293b; text-align: left; flex-shrink: 0; }
+
+.debrief-feedback {
+  background: #fff; border-radius: 16px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); line-height: 1.7;
+  font-size: 15px; color: #475569; margin-bottom: 16px;
+}
+.debrief-feedback .fb-praise { color: #16a34a; font-weight: 600; }
+.debrief-feedback .fb-note { color: #d97706; font-weight: 600; }
+.debrief-feedback .fb-tip { color: #7c3aed; font-weight: 600; }
+.debrief-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ============================================================
+   TRANSITION OVERLAY
+   ============================================================ */
+.transition-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.9);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; animation: fadeIn 0.3s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.transition-card {
+  text-align: center; color: #fff;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.transition-card .t-icon { font-size: 64px; }
+.transition-card .t-title { font-size: 24px; font-weight: 700; margin: 12px 0 4px; }
+.transition-card .t-sub { font-size: 15px; color: #94a3b8; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .task-cards { flex-direction: column; align-items: center; }
+  .task-card { width: 100%; max-width: 320px; }
+  #screen-hub { padding: 24px 16px; }
+  .scene-content { padding: 16px; }
+  .msg-bubble { max-width: 88%; }
+  .bottombar { flex-wrap: wrap; gap: 8px; }
+}
+
+/* utility */
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============================================================
+     SCREEN: START
+     ============================================================ -->
+<div id="screen-start" class="screen active">
+  <div class="logo">🧳</div>
+  <h1>BizTrip English</h1>
+  <p class="subtitle">Business Trip Speaking · Interactive Courseware</p>
+  <div class="story-intro">
+    <strong>You are Alex Chen</strong>, Marketing Manager at a tech company in Beijing.<br><br>
+    You're flying to <strong>Singapore</strong> for a critical client meeting. Over the next two days,
+    you'll navigate the airport, present a proposal in the boardroom, and build relationships
+    over dinner — <strong>all in English</strong>.<br><br>
+    Three missions. Three real-world scenarios. <strong>Your words shape the outcome.</strong>
+  </div>
+  <button class="btn-start" data-action="go-hub">
+    Start Your Business Trip ✈️
+  </button>
+</div>
+
+<!-- ============================================================
+     SCREEN: HUB
+     ============================================================ -->
+<div id="screen-hub" class="screen">
+  <div class="hub-header">
+    <h2>🗺️ Mission Center</h2>
+    <p>Complete each mission in order. Your business trip unfolds ahead.</p>
+  </div>
+  <div class="task-cards" id="taskCards">
+    <!-- dynamically rendered -->
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: SCENE (Briefing / Prep / Mission / Debrief)
+     ============================================================ -->
+<div id="screen-scene" class="screen">
+  <div class="topbar">
+    <button class="back-btn" data-action="back-to-hub">← Back to Missions</button>
+    <span class="scene-title" id="sceneTitle">—</span>
+    <span class="phase-indicator" id="phaseIndicator">—</span>
+  </div>
+  <div class="scene-content" id="sceneContent">
+    <!-- dynamically rendered -->
+  </div>
+  <div class="bottombar" id="bottombar">
+    <!-- dynamically rendered per phase -->
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// SCENES DATA
+// ============================================================
+var SCENES = [
+  {
+    id: 'airport',
+    title: 'Airport Departure',
+    icon: '✈️',
+    npc: { name: 'Ground Staff', avatar: '👩‍✈️', role: 'Airline Staff' },
+    theme: '#2563eb',
+    cssClass: 'card-airport',
+    chatClass: 'scene-airport',
+    briefing: {
+      emoji: '✈️',
+      text: 'You are <span class="highlight">Alex Chen</span>, Marketing Manager at a Beijing tech company. '
+          + 'It\'s 2:00 PM at <span class="highlight">Beijing Capital Airport</span>. '
+          + 'You\'re flying SQ807 to Singapore for tomorrow\'s big client meeting.',
+      goals: ['Handle flight delays in English', 'Ask for updated departure info', 'Stay calm and polite under travel stress']
+    },
+    prep: {
+      vocabulary: [
+        { en: 'boarding pass', zh: '登机牌' },
+        { en: 'departure gate', zh: '登机口' },
+        { en: 'delayed', zh: '延误的' },
+        { en: 'terminal', zh: '航站楼' },
+        { en: 'check-in counter', zh: '值机柜台' },
+        { en: 'on time', zh: '准时' }
+      ],
+      structures: [
+        { template: 'Which gate for flight ___?', slots: 'flight number' },
+        { template: 'Is the flight on ___?', slots: 'time / schedule' },
+        { template: 'My flight has been ___ .', slots: 'delayed / cancelled / changed' }
+      ],
+      exercise: {
+        type: 'match',
+        instruction: 'Match the English word to its Chinese meaning:',
+        prompt: '登机牌',
+        options: [
+          { text: 'boarding pass', correct: true },
+          { text: 'departure gate', correct: false },
+          { text: 'delayed', correct: false },
+          { text: 'terminal', correct: false }
+        ]
+      }
+    },
+    mission: {
+      rounds: [
+        {
+          npcLine: 'Good afternoon. Your flight SQ807 to Singapore has been delayed, I\'m afraid.',
+          goal: 'Ask how long the delay is',
+          guidedOptions: [
+            { text: 'Excuse me, how long is the delay?', correct: true, feedback: 'Perfect — polite and clear!' },
+            { text: 'The flight is good, thank you.', correct: false, feedback: 'That doesn\'t address the delay. Try asking about the time.' },
+            { text: 'I want to change my ticket please.', correct: false, feedback: 'You can ask that later. First, find out how long the delay is.' }
+          ],
+          semiGuidedHints: ['how long', 'delay', 'excuse me'],
+          freeKeywords: ['how long', 'delay', 'late', 'time', 'excuse me'],
+          expectedRegister: 'transactional'
+        },
+        {
+          npcLine: 'It looks like about one hour. Weather conditions over the South China Sea.',
+          goal: 'Ask about the new departure time',
+          guidedOptions: [
+            { text: 'Thank you. What\'s the new departure time?', correct: true, feedback: 'Exactly right — following up with the key question.' },
+            { text: 'That is very bad weather!', correct: false, feedback: 'The weather is an issue, but your priority is getting the new time.' },
+            { text: 'OK. Which gate should I go to?', correct: false, feedback: 'Good question, but first confirm when you\'ll actually depart.' }
+          ],
+          semiGuidedHints: ['new departure time', 'when', 'take off'],
+          freeKeywords: ['when', 'new time', 'departure', 'take off', 'leave'],
+          expectedRegister: 'transactional'
+        },
+        {
+          npcLine: 'We now expect departure at 3:15 PM. Gate 42. I apologize for the inconvenience.',
+          goal: 'Acknowledge and ask which gate',
+          guidedOptions: [
+            { text: 'Thank you — so Gate 42 at 3:15. I appreciate the update.', correct: true, feedback: 'Perfect! You confirmed the key info and stayed polite.' },
+            { text: 'OK goodbye.', correct: false, feedback: 'A bit too brief for a professional interaction. Always confirm details and say thanks.' },
+            { text: 'I need to complain to the manager!', correct: false, feedback: 'That\'s too aggressive for this situation. Stay professional — delays happen.' }
+          ],
+          semiGuidedHints: ['gate 42', '3:15', 'thank you', 'confirm'],
+          freeKeywords: ['gate', '3:15', 'thank', 'confirm', 'ok'],
+          expectedRegister: 'transactional'
+        },
+        {
+          npcLine: 'You\'re welcome. Oh — just in, your gate has been changed to Gate 38. Please check the display board.',
+          goal: 'Acknowledge the gate change',
+          guidedOptions: [
+            { text: 'Got it — Gate 38. I\'ll check the board. Thanks for letting me know!', correct: true, feedback: 'Excellent closing! You confirmed the change and ended politely.' },
+            { text: 'Why did the gate change? This is so annoying.', correct: false, feedback: 'Venting frustration won\'t help. In travel English, stay calm and confirm the new info.' },
+            { text: 'OK I will go to Gate 42 then.', correct: false, feedback: 'Careful — the gate changed to 38, not 42. Always listen for updated info.' }
+          ],
+          semiGuidedHints: ['gate 38', 'got it', 'check board', 'thanks'],
+          freeKeywords: ['gate 38', 'got it', 'check', 'board', 'thank'],
+          expectedRegister: 'transactional'
+        }
+      ]
+    },
+    debrief: {
+      emoji: '🛫',
+      title: 'Mission Complete!',
+      praise: 'You handled the flight delay like a pro.',
+      note: 'Travel English is about staying calm and confirming key info — gate numbers, times, and changes.',
+      tip: 'In airport situations, short and direct is fine. "Which gate?" is perfectly acceptable. You don\'t need formal business language here.',
+      registerTakeaway: 'Travel English = Transactional. Short, direct, information-focused. Save the formality for the boardroom.'
+    }
+  },
+
+  // ============================================================
+  // SCENE 2: CLIENT MEETING
+  // ============================================================
+  {
+    id: 'meeting',
+    title: 'Client Meeting',
+    icon: '🤝',
+    npc: { name: 'Ms. Chen', avatar: '👩‍💼', role: 'VP of Marketing, Chen Group Singapore' },
+    theme: '#7c3aed',
+    cssClass: 'card-meeting',
+    chatClass: 'scene-meeting',
+    briefing: {
+      emoji: '🤝',
+      text: 'You\'ve arrived at <span class="highlight">Chen Group\'s Singapore office</span>. '
+          + 'You\'re about to meet <span class="highlight">Ms. Chen, VP of Marketing</span>, for the first time. '
+          + 'Your task: present your proposal, handle questions on budget and timeline, and confirm next steps.',
+      goals: ['Open a formal business meeting with small talk', 'Present a proposal clearly', 'Handle pricing questions and objections professionally', 'Close with clear next steps and appreciation']
+    },
+    prep: {
+      vocabulary: [
+        { en: 'agenda', zh: '议程' },
+        { en: 'proposal', zh: '提案/方案' },
+        { en: 'timeline', zh: '时间线' },
+        { en: 'deliverable', zh: '交付物' },
+        { en: 'budget', zh: '预算' },
+        { en: 'scope', zh: '范围' },
+        { en: 'stakeholder', zh: '相关方/利益相关者' }
+      ],
+      structures: [
+        { template: 'Thank you for making time to ___ .', slots: 'meet with us / discuss this' },
+        { template: 'I\'d like to walk you through ___ .', slots: 'our proposal / the key points' },
+        { template: 'Could you clarify ___ ?', slots: 'the timeline / the budget range' },
+        { template: 'Would a ___ timeline work for your team?', slots: 'two-week / one-month' }
+      ],
+      exercise: {
+        type: 'categorize',
+        instruction: 'Which stage of the meeting does this phrase belong to?',
+        prompt: '"Thank you for making time to meet with us today."',
+        options: [
+          { text: 'Opening / Small Talk', correct: true },
+          { text: 'Presenting the Proposal', correct: false },
+          { text: 'Handling Objections', correct: false },
+          { text: 'Closing / Next Steps', correct: false }
+        ]
+      }
+    },
+    mission: {
+      rounds: [
+        {
+          npcLine: 'Welcome, Alex! Thank you for making the trip. I\'ve been looking forward to this.',
+          goal: 'Open with a polite greeting',
+          guidedOptions: [
+            { text: 'Thank you for having me, Ms. Chen. I appreciate you making time today.', correct: true, feedback: 'Warm, professional, and grateful — perfect opening.' },
+            { text: 'Hi! So what do you want to know?', correct: false, feedback: 'Too casual for a first meeting with a VP. Start with gratitude and formality.' },
+            { text: 'Sorry I\'m late. The flight was delayed.', correct: false, feedback: 'Don\'t start with an apology unless you were actually late. Open positively instead.' }
+          ],
+          semiGuidedHints: ['thank you for having me', 'appreciate your time', 'looking forward'],
+          freeKeywords: ['thank', 'appreciate', 'time', 'looking forward', 'pleasure'],
+          expectedRegister: 'formal'
+        },
+        {
+          npcLine: 'Of course. Please — walk us through your proposal. We\'re very interested in what you have to offer.',
+          goal: 'Present your proposal clearly',
+          guidedOptions: [
+            { text: 'Absolutely. I\'d like to walk you through our three-phase plan — starting with market research, then content development, and finally a pilot launch.', correct: true, feedback: 'Clear structure! You previewed the three phases before diving into details.' },
+            { text: 'Well, we have a lot of things. It\'s complicated. Where should I start?', correct: false, feedback: 'This sounds unprepared. Structure your response — preview the phases before diving in.' },
+            { text: 'Our product is the best. You should just buy it.', correct: false, feedback: 'Too aggressive and lacks substance. Focus on walking them through the plan, not hard-selling.' }
+          ],
+          semiGuidedHints: ['three-phase plan', 'walk you through', 'market research', 'pilot launch'],
+          freeKeywords: ['three', 'phase', 'plan', 'walk through', 'research', 'development', 'launch', 'proposal'],
+          expectedRegister: 'formal'
+        },
+        {
+          npcLine: 'Interesting. What kind of budget are we looking at for this three-phase approach?',
+          goal: 'Respond to pricing question confidently',
+          guidedOptions: [
+            { text: 'For the full scope, we\'re looking at around $45,000 — that covers research through pilot launch, with a detailed breakdown in the proposal document.', correct: true, feedback: 'Confident, transparent, and you referenced the supporting document. Well done.' },
+            { text: 'It\'s very expensive. Maybe too expensive for you.', correct: false, feedback: 'Never imply the client can\'t afford it. Give a clear number with justification.' },
+            { text: 'Um, I\'m not sure actually. Let me check and get back to you.', correct: false, feedback: 'You should come prepared with a number. Even a range is better than uncertainty in a meeting.' }
+          ],
+          semiGuidedHints: ['around $45,000', 'full scope', 'detailed breakdown', 'proposal document'],
+          freeKeywords: ['45', 'thousand', 'dollars', 'budget', 'scope', 'breakdown', 'proposal'],
+          expectedRegister: 'formal'
+        },
+        {
+          npcLine: 'Hmm — that\'s within range, but the timeline concerns me. Three months feels tight for the pilot launch phase.',
+          goal: 'Handle the timeline objection',
+          guidedOptions: [
+            { text: 'That\'s a fair concern. We could extend the pilot phase to four months, which gives more time for user testing without affecting the overall budget.', correct: true, feedback: 'Excellent! You acknowledged the concern, offered a concrete adjustment, and addressed the budget impact.' },
+            { text: 'No, three months is enough. Trust me.', correct: false, feedback: 'Dismissing the client\'s concern is a trust-killer. Acknowledge it and offer flexibility.' },
+            { text: 'OK, we can do whatever timeline you want.', correct: false, feedback: 'Too vague. Propose a specific alternative and explain the trade-off.' }
+          ],
+          semiGuidedHints: ['fair concern', 'extend to four months', 'more user testing', 'budget unchanged'],
+          freeKeywords: ['fair', 'concern', 'four', 'months', 'extend', 'testing', 'budget', 'adjust'],
+          expectedRegister: 'formal'
+        },
+        {
+          npcLine: 'I like that flexibility. So — what are our next steps from here?',
+          goal: 'Close with clear next steps',
+          guidedOptions: [
+            { text: 'I\'ll send the revised proposal with the four-month timeline by tomorrow. We can schedule a follow-up call next week once your team has had time to review. How does that sound?', correct: true, feedback: 'Crystal clear next steps with a timeline and a proposed follow-up. This is how you close a meeting.' },
+            { text: 'I\'ll email you something eventually. Bye!', correct: false, feedback: 'Way too vague. Specify what you\'ll send, when, and what happens after.' },
+            { text: 'Can you tell me what YOU want to do next?', correct: false, feedback: 'Don\'t put the burden on the client. You should drive the next steps.' }
+          ],
+          semiGuidedHints: ['send revised proposal', 'by tomorrow', 'follow-up call', 'next week'],
+          freeKeywords: ['send', 'revised', 'proposal', 'tomorrow', 'follow-up', 'call', 'next week', 'review'],
+          expectedRegister: 'formal'
+        }
+      ]
+    },
+    debrief: {
+      emoji: '💼',
+      title: 'Deal Moves Forward!',
+      praise: 'You presented with confidence and handled the timeline objection skillfully.',
+      note: 'Formal business English is about structure — preview your points, give clear numbers, and always drive the next steps.',
+      tip: 'Notice the difference between travel English (direct & short) and meeting English (structured & polite). "I\'d like to walk you through…" sounds much more professional than "Let me tell you about…"',
+      registerTakeaway: 'Meeting English = Formal & Structured. Use "I\'d like to…", "Could you clarify…?", "Would a ___ timeline work?"'
+    }
+  },
+
+  // ============================================================
+  // SCENE 3: DINNER SOCIAL
+  // ============================================================
+  {
+    id: 'dinner',
+    title: 'Dinner Social',
+    icon: '🍷',
+    npc: { name: 'Ms. Chen & Team', avatar: '🍽️', role: 'Client & Colleagues' },
+    theme: '#d97706',
+    cssClass: 'card-dinner',
+    chatClass: 'scene-dinner',
+    briefing: {
+      emoji: '🍷',
+      text: 'The meeting was a <span class="highlight">success</span>! Ms. Chen invites you and her team to dinner at a local restaurant. '
+          + 'No slides, no agenda — just people. This is where <span class="highlight">relationships are built</span>. '
+          + 'Your task: connect with the team on a personal level, navigate Singaporean dining culture, and leave a lasting impression.',
+      goals: ['Make small talk naturally over dinner', 'Ask and answer personal questions appropriately', 'Navigate cross-cultural dining etiquette', 'End the evening with warmth and appreciation']
+    },
+    prep: {
+      vocabulary: [
+        { en: 'cuisine', zh: '菜系/美食' },
+        { en: 'local specialty', zh: '当地特色菜' },
+        { en: 'toast (v./n.)', zh: '敬酒' },
+        { en: 'recommend', zh: '推荐' },
+        { en: 'hosting', zh: '款待' },
+        { en: 'cheers', zh: '干杯' }
+      ],
+      structures: [
+        { template: 'What\'s the must-try ___ here?', slots: 'dish / specialty' },
+        { template: 'How long have you been with ___ ?', slots: 'the company / the team' },
+        { template: 'Cheers to ___ !', slots: 'a great partnership / your team' },
+        { template: 'This has been ___ .', slots: 'wonderful / a fantastic evening' }
+      ],
+      cultureTips: [
+        '🍽️ Singapore dining is often sharing-style — dishes are placed in the center.',
+        '🥂 The host or most senior person typically initiates the first toast.',
+        '🥢 Don\'t stick chopsticks upright in rice — it resembles funeral rituals.',
+        '💬 Personal questions (family, hobbies, career path) are normal — it shows interest.'
+      ],
+      exercise: {
+        type: 'register',
+        instruction: 'In a dinner social setting, which version sounds more appropriate?',
+        prompt: '',
+        options: [
+          { text: '"This has been a wonderful evening. Thank you for hosting."', correct: true },
+          { text: '"Pursuant to our discussion, I find the dining experience satisfactory."', correct: false },
+          { text: '"Yeah, good food. Thanks."', correct: false }
+        ]
+      }
+    },
+    mission: {
+      rounds: [
+        {
+          npcLine: 'Alex! Come, sit here. We\'ve heard so much about your company. This is our team — Li Wei, our ops lead, and Priya, our content director.',
+          goal: 'Greet everyone warmly',
+          guidedOptions: [
+            { text: 'Wonderful to meet you all! Thanks for having me — this place looks fantastic.', correct: true, feedback: 'Warm, inclusive, and you complimented the restaurant. Perfect dinner opening.' },
+            { text: 'Hello. I am Alex Chen, Marketing Manager. My title is senior level.', correct: false, feedback: 'Too formal and status-focused. Dinner is about people, not titles. Keep it warm and personal.' },
+            { text: '(Just nod and sit down quietly)', correct: false, feedback: 'In business social settings, being too quiet can read as disinterest. Engage warmly with everyone.' }
+          ],
+          semiGuidedHints: ['wonderful to meet you', 'thanks for having me', 'fantastic place'],
+          freeKeywords: ['great', 'meet', 'thank', 'having me', 'place', 'looks', 'wonderful', 'everyone'],
+          expectedRegister: 'informal'
+        },
+        {
+          npcLine: 'Have you had Singaporean food before? You absolutely must try our chili crab — it\'s legendary.',
+          goal: 'Ask for a recommendation',
+          guidedOptions: [
+            { text: 'I haven\'t actually — this is my first time in Singapore! What\'s the one dish I absolutely shouldn\'t miss?', correct: true, feedback: 'Enthusiastic and open! You showed genuine curiosity about the local cuisine.' },
+            { text: 'I prefer Chinese food. Does this place have anything normal?', correct: false, feedback: 'This could come across as dismissive. Show curiosity about local food instead of comparing.' },
+            { text: 'I\'m not hungry. Let\'s just talk business.', correct: false, feedback: 'This is a social dinner — declining food and pushing business kills the relationship-building vibe.' }
+          ],
+          semiGuidedHints: ['first time in Singapore', 'must-try dish', 'recommend', 'chili crab'],
+          freeKeywords: ['first time', 'Singapore', 'must try', 'recommend', 'dish', 'chili crab', 'local'],
+          expectedRegister: 'informal'
+        },
+        {
+          npcLine: 'Amazing — you\'re in for a treat! The chili crab here is legendary. So Alex — I\'m curious, how did you get into marketing? I always love hearing how people found their path.',
+          goal: 'Answer a personal question naturally',
+          guidedOptions: [
+            { text: 'Honestly? I studied engineering first, then realized I loved the story behind products more than building them. Made the switch five years ago and never looked back.', correct: true, feedback: 'Great answer — personal, authentic, with a bit of vulnerability. This is exactly how you connect at dinner.' },
+            { text: 'I have a marketing degree from a top university and I\'m very good at my job.', correct: false, feedback: 'Too boastful for a social setting. Tell a story, not a resume. People connect with the journey, not credentials.' },
+            { text: 'That\'s a long story. Maybe another time.', correct: false, feedback: 'Shutting down a personal question can feel cold. Share a short version — it\'s how relationships are built.' }
+          ],
+          semiGuidedHints: ['studied engineering', 'loved the story', 'switched to marketing', 'never looked back'],
+          freeKeywords: ['engineering', 'story', 'switched', 'marketing', 'five years', 'love', 'path'],
+          expectedRegister: 'informal'
+        },
+        {
+          npcLine: '(Priya laughs) So you\'re an engineer turned marketer! Bet you\'re the only one on your team who actually reads the technical specs.',
+          goal: 'Respond to a light joke naturally',
+          guidedOptions: [
+            { text: '(laughing) Guilty as charged! I do drive the engineers crazy sometimes. But hey — it means I can translate between the two worlds.', correct: true, feedback: 'Perfect! You laughed along, owned the joke, and turned it into a strength. This is how rapport is built.' },
+            { text: 'That\'s not true. I don\'t just read specs — I do a lot more than that.', correct: false, feedback: 'Too defensive. It was a friendly joke — laughing along builds more connection than correcting.' },
+            { text: '(Stay silent and look uncomfortable)', correct: false, feedback: 'Not engaging with a friendly joke can make the moment awkward. Smile and play along — it shows social ease.' }
+          ],
+          semiGuidedHints: ['guilty', 'drive engineers crazy', 'translate between worlds'],
+          freeKeywords: ['guilty', 'laugh', 'engineers', 'translate', 'both', 'worlds', 'joke'],
+          expectedRegister: 'informal'
+        },
+        {
+          npcLine: '(Ms. Chen raises her glass) I\'d like to propose a toast. To new partnerships — and to Alex, for making the trip. Cheers, everyone!',
+          goal: 'Respond to the toast gracefully',
+          guidedOptions: [
+            { text: '(Raising glass) Thank you, Ms. Chen. Cheers to your incredible team — and to what we\'re going to build together.', correct: true, feedback: 'Gracious, warm, and you turned the toast back to include the team. This is social fluency at its best.' },
+            { text: '(Raise glass silently)', correct: false, feedback: 'A toast is a moment to speak. Even a short acknowledgment adds warmth and shows you\'re engaged.' },
+            { text: 'Actually, I don\'t drink. Can I have water?', correct: false, feedback: 'It\'s fine not to drink, but there\'s a smoother way — raise your glass (water is fine), smile, and say your piece without making it about the drink.' }
+          ],
+          semiGuidedHints: ['thank you', 'cheers to your team', 'build together'],
+          freeKeywords: ['thank', 'cheers', 'team', 'together', 'build', 'honor', 'partnership'],
+          expectedRegister: 'informal'
+        },
+        {
+          npcLine: 'Alex, it\'s been a pleasure. We\'ll walk you out — your taxi should be here any minute. Safe travels back to the hotel.',
+          goal: 'End the evening with warmth',
+          guidedOptions: [
+            { text: 'This has been truly wonderful. Thank you all for such a warm welcome — I feel like I\'ve made friends, not just business partners. Safe night, everyone.', correct: true, feedback: 'Beautiful closing! You expressed genuine gratitude and elevated the relationship beyond just business.' },
+            { text: 'OK bye. I\'ll email you the proposal.', correct: false, feedback: 'Too abrupt for the end of a social dinner. Take a moment to express appreciation before shifting back to business.' },
+            { text: 'This was OK. The food was fine. Good night.', correct: false, feedback: 'Underwhelming close. Even if you\'re tired, end with warmth — it\'s the last impression you leave.' }
+          ],
+          semiGuidedHints: ['truly wonderful', 'warm welcome', 'made friends', 'safe night'],
+          freeKeywords: ['wonderful', 'thank', 'warm', 'friends', 'partners', 'safe', 'night', 'everyone'],
+          expectedRegister: 'informal'
+        }
+      ]
+    },
+    debrief: {
+      emoji: '🥂',
+      title: 'Relationships Built!',
+      praise: 'You navigated the dinner with warmth, humor, and cultural awareness.',
+      note: 'The register shift from the boardroom to the dinner table is one of the hardest skills in business English. You showed you can do it.',
+      tip: 'Dinner small talk follows a rhythm: accept hospitality → show curiosity about others → share a bit about yourself → express gratitude. You nailed every beat.',
+      registerTakeaway: 'Social English = Warm & Authentic. "What\'s the must-try dish?", "How did you get into…?", "This has been wonderful." — personal, not transactional.'
+    }
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+var currentSceneId = null;
+var currentPhase = null;   // 'briefing' | 'prep' | 'mission' | 'debrief'
+var currentRound = 0;
+var difficultyMode = 'guided'; // 'guided' | 'semiGuided' | 'free'
+var roundResults = [];     // { round: N, correct: bool, mode: string }
+var dialogueHistory = [];  // { speaker: 'npc'|'user', text: string, recast: string|null }
+var prepScore = 0;
+var prepTotal = 0;
+
+function getSceneById(id) {
+  for (var i = 0; i < SCENES.length; i++) {
+    if (SCENES[i].id === id) return SCENES[i];
+  }
+  return null;
+}
+
+function getSceneIndex(id) {
+  for (var i = 0; i < SCENES.length; i++) {
+    if (SCENES[i].id === id) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// PROGRESS PERSISTENCE
+// ============================================================
+var STORAGE_KEY = 'biztrip_english_progress';
+
+function loadProgress() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveProgress(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) { /* ignore quota errors */ }
+}
+
+function getSceneProgress(sceneId) {
+  var p = loadProgress();
+  return p[sceneId] || null;
+}
+
+function setSceneProgress(sceneId, scoreData) {
+  var p = loadProgress();
+  var existing = p[sceneId];
+  var best = existing && existing.best ? Math.max(existing.best, scoreData.total) : scoreData.total;
+  p[sceneId] = { completed: true, score: scoreData, best: best, completedAt: Date.now() };
+  saveProgress(p);
+}
+
+// ============================================================
+// SCREEN NAVIGATION
+// ============================================================
+function showScreen(id) {
+  var screens = document.querySelectorAll('.screen');
+  for (var i = 0; i < screens.length; i++) {
+    screens[i].classList.remove('active');
+  }
+  var target = document.getElementById('screen-' + id);
+  if (target) target.classList.add('active');
+  document.body.style.background = (id === 'scene') ? '#f8fafc' : '';
+}
+
+// ============================================================
+// SPEECH (TTS for AI messages and vocab)
+// ============================================================
+var _speechSynth = window.speechSynthesis;
+var _voicesLoaded = false;
+
+function warmUpSpeech() {
+  if (!_speechSynth) return;
+  _speechSynth.getVoices();
+  if (!_voicesLoaded) {
+    _speechSynth.onvoiceschanged = function() { _voicesLoaded = true; };
+  }
+  _voicesLoaded = true;
+}
+
+function speakText(text, rate) {
+  if (!_speechSynth) return;
+  _speechSynth.cancel();
+  // Strip stage directions like "(laughing)" and "(Ms. Chen raises her glass)"
+  var cleanText = text.replace(/\s*\([^)]+\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!cleanText) cleanText = text.replace(/[()]/g, '');
+  var utter = new SpeechSynthesisUtterance(cleanText);
+  utter.lang = 'en-US';
+  utter.rate = rate || 0.9;
+  utter.pitch = 1;
+  var voices = _speechSynth.getVoices();
+  for (var i = 0; i < voices.length; i++) {
+    if (voices[i].lang === 'en-US' && voices[i].name.indexOf('Female') !== -1) {
+      utter.voice = voices[i]; break;
+    }
+  }
+  if (!utter.voice && voices.length > 0) {
+    for (var j = 0; j < voices.length; j++) {
+      if (voices[j].lang === 'en-US') { utter.voice = voices[j]; break; }
+    }
+  }
+  _speechSynth.speak(utter);
+}
+
+// ============================================================
+// SCENE SCREEN: RENDER PHASES
+// ============================================================
+function getScene() { return getSceneById(currentSceneId); }
+
+function updateTopbar() {
+  var scene = getScene();
+  document.getElementById('sceneTitle').textContent = scene.icon + ' ' + scene.title;
+  var phaseLabels = { briefing: '1/4', prep: '2/4', mission: '3/4', debrief: '4/4' };
+  var phaseNames = { briefing: 'Briefing', prep: 'Prep', mission: 'Mission', debrief: 'Debrief' };
+  document.getElementById('phaseIndicator').textContent = phaseNames[currentPhase] + ' · ' + phaseLabels[currentPhase];
+}
+
+function renderPhase() {
+  var scene = getScene();
+  var content = document.getElementById('sceneContent');
+  var bottombar = document.getElementById('bottombar');
+  updateTopbar();
+  content.classList.remove('mission-mode');
+
+  switch (currentPhase) {
+    case 'briefing': renderBriefing(content, bottombar, scene); break;
+    case 'prep':     renderPrep(content, bottombar, scene); break;
+    case 'mission':  renderMission(content, bottombar, scene); break;
+    case 'debrief':  renderDebrief(content, bottombar, scene); break;
+  }
+}
+
+// -- BRIEFING --
+function renderBriefing(content, bottombar, scene) {
+  var goalsHtml = '';
+  for (var i = 0; i < scene.briefing.goals.length; i++) {
+    goalsHtml += '<span class="goal-tag">✅ ' + scene.briefing.goals[i] + '</span>';
+  }
+  content.innerHTML =
+    '<div class="phase-panel active">'
+    + '<div class="phase-icon">' + scene.briefing.emoji + '</div>'
+    + '<h2 class="text-center">Mission Briefing</h2>'
+    + '<div class="briefing-card">' + scene.briefing.text + '</div>'
+    + '<div class="goal-tags mt-16">' + goalsHtml + '</div>'
+    + '</div>';
+  bottombar.innerHTML =
+    '<div></div>'
+    + '<div class="action-area">'
+    + '<button class="btn-action btn-primary" data-action="go-prep">Start Preparation →</button>'
+    + '</div>';
+}
+
+// -- PREP --
+function renderPrep(content, bottombar, scene) {
+  // vocabulary
+  var vocabHtml = '';
+  for (var i = 0; i < scene.prep.vocabulary.length; i++) {
+    var v = scene.prep.vocabulary[i];
+    vocabHtml += '<div class="vocab-item">'
+      + '<span><span class="en">' + v.en + '</span> · <span class="zh">' + v.zh + '</span></span>'
+      + '<button class="speak-btn" data-action="speak-word" data-word="' + v.en.replace(/"/g, '&quot;') + '">🔊</button>'
+      + '</div>';
+  }
+  // structures
+  var structHtml = '';
+  for (var j = 0; j < scene.prep.structures.length; j++) {
+    var s = scene.prep.structures[j];
+    structHtml += '<div class="structure-item">'
+      + '<span class="template">' + s.template + '</span>'
+      + ' <span class="slots">[' + s.slots + ']</span>'
+      + '</div>';
+  }
+  // culture tips (scene 3)
+  var tipsHtml = '';
+  if (scene.prep.cultureTips) {
+    tipsHtml = '<div class="prep-section"><h3>🌏 Culture Tips</h3>';
+    for (var k = 0; k < scene.prep.cultureTips.length; k++) {
+      tipsHtml += '<div class="structure-item">' + scene.prep.cultureTips[k] + '</div>';
+    }
+    tipsHtml += '</div>';
+  }
+  // exercise
+  var ex = scene.prep.exercise;
+  // Shuffle exercise options
+  var exIndices = [];
+  for (var m = 0; m < ex.options.length; m++) exIndices.push(m);
+  for (var k = exIndices.length - 1; k > 0; k--) {
+    var r = Math.floor(Math.random() * (k + 1));
+    var tmp = exIndices[k]; exIndices[k] = exIndices[r]; exIndices[r] = tmp;
+  }
+  var exOptionsHtml = '';
+  for (var m = 0; m < exIndices.length; m++) {
+    var exOrigIdx = exIndices[m];
+    exOptionsHtml += '<button class="ex-option" data-action="prep-answer" data-index="' + exOrigIdx + '">'
+      + ex.options[exOrigIdx].text + '</button>';
+  }
+
+  prepScore = 0; prepTotal = 1;
+
+  content.innerHTML =
+    '<div class="phase-panel active">'
+    + '<h2 class="text-center">📚 Preparation</h2>'
+    + '<div class="prep-section"><h3>📝 Key Vocabulary</h3><div class="vocab-grid">' + vocabHtml + '</div></div>'
+    + '<div class="prep-section"><h3>💬 Useful Structures</h3>' + structHtml + '</div>'
+    + tipsHtml
+    + '<div class="prep-exercise" id="prepExercise">'
+    + '<h3>✏️ Quick Check</h3>'
+    + '<p class="ex-prompt">' + ex.instruction + '</p>'
+    + (ex.prompt ? '<p style="font-weight:700;font-size:16px;color:#1e293b;margin-bottom:10px;">"' + ex.prompt + '"</p>' : '')
+    + '<div class="ex-options" id="exOptions">' + exOptionsHtml + '</div>'
+    + '<div id="exFeedback" class="mt-12" style="font-size:14px;"></div>'
+    + '</div>'
+    + '</div>';
+  bottombar.innerHTML =
+    '<div></div>'
+    + '<div class="action-area">'
+    + '<button class="btn-action btn-primary" data-action="go-mission" id="btnGoMission" disabled>Start Mission →</button>'
+    + '</div>';
+}
+
+// -- MISSION --
+function renderMission(content, bottombar, scene) {
+  currentRound = 0;
+  roundResults = [];
+  dialogueHistory = [];
+  content.classList.add('mission-mode');
+  content.innerHTML =
+    '<div class="mission-container">'
+    + '<div class="chat-area ' + scene.chatClass + '" id="chatArea"></div>'
+    + '<div class="mission-input-area" id="missionInput"></div>'
+    + '</div>';
+  renderBottombarMission(bottombar);
+  // start with NPC first line
+  showNPCLine(scene, 0);
+}
+
+function renderBottombarMission(bottombar) {
+  var gCls = difficultyMode === 'guided' ? ' active-guided' : '';
+  var sCls = difficultyMode === 'semiGuided' ? ' active-semi' : '';
+  var fCls = difficultyMode === 'free' ? ' active-free' : '';
+  bottombar.innerHTML =
+    '<div class="mode-switcher">'
+    + '<button class="btn-mode' + gCls + '" data-action="set-mode" data-mode="guided">🟢 Guided</button>'
+    + '<button class="btn-mode' + sCls + '" data-action="set-mode" data-mode="semiGuided">🟡 Semi-Free</button>'
+    + '<button class="btn-mode' + fCls + '" data-action="set-mode" data-mode="free">🔴 Free</button>'
+    + '</div>'
+    + '<div class="action-area">'
+    + '<button class="btn-action btn-secondary hidden" data-action="skip-round" id="btnSkip">Skip →</button>'
+    + '</div>';
+}
+
+function showNPCLine(scene, roundIdx) {
+  var chatArea = document.getElementById('chatArea');
+  if (!chatArea) return;
+  var round = scene.mission.rounds[roundIdx];
+  // typing indicator
+  var typingId = 'typing-' + roundIdx;
+  chatArea.innerHTML += '<div class="typing-indicator" id="' + typingId + '"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  var delay = Math.min(800 + round.npcLine.length * 25, 2500);
+  setTimeout(function() {
+    var typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    var avatarLabel = scene.npc.avatar + ' ' + scene.npc.name;
+    dialogueHistory.push({ speaker: 'npc', text: round.npcLine });
+    chatArea.innerHTML +=
+      '<div class="msg-bubble msg-npc">'
+      + '<div class="npc-label">' + avatarLabel + '</div>'
+      + round.npcLine
+      + '<div class="msg-actions"><button class="msg-btn" data-action="speak-msg" data-text="' + round.npcLine.replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '">🔊 Listen</button></div>'
+      + '</div>';
+    chatArea.scrollTop = chatArea.scrollHeight;
+    // auto speak
+    if (round.autoSpeech !== false) speakText(round.npcLine, 0.85);
+    // show input
+    renderMissionInput(scene, roundIdx);
+  }, delay);
+}
+
+function renderMissionInput(scene, roundIdx) {
+  var inputArea = document.getElementById('missionInput');
+  if (!inputArea) return;
+  var round = scene.mission.rounds[roundIdx];
+
+  if (difficultyMode === 'guided') {
+    // Shuffle options so correct answer isn't always first
+    var indices = [];
+    for (var i = 0; i < round.guidedOptions.length; i++) indices.push(i);
+    for (var k = indices.length - 1; k > 0; k--) {
+      var r = Math.floor(Math.random() * (k + 1));
+      var tmp = indices[k]; indices[k] = indices[r]; indices[r] = tmp;
+    }
+    var optsHtml = '';
+    for (var i = 0; i < indices.length; i++) {
+      var origIdx = indices[i];
+      var opt = round.guidedOptions[origIdx];
+      optsHtml += '<button class="guided-option" data-action="pick-guided" data-index="' + origIdx + '">'
+        + opt.text + '</button>';
+    }
+    inputArea.innerHTML = '<div class="guided-options">' + optsHtml + '</div>';
+  } else if (difficultyMode === 'semiGuided') {
+    var hintsHtml = '';
+    for (var j = 0; j < round.semiGuidedHints.length; j++) {
+      hintsHtml += '<span class="semi-hint" data-action="use-hint" data-hint="' + round.semiGuidedHints[j].replace(/"/g, '&quot;') + '">💡 ' + round.semiGuidedHints[j] + '</span>';
+    }
+    inputArea.innerHTML =
+      '<div class="semi-guided-area">'
+      + '<div class="semi-hints">' + hintsHtml + '</div>'
+      + '<div class="semi-input-row">'
+      + '<input type="text" id="semiInput" placeholder="Type your reply using the hints above...">'
+      + '<button class="btn-action btn-secondary" data-action="submit-semi">Send</button>'
+      + '</div>'
+      + '</div>';
+    var semiInput = document.getElementById('semiInput');
+    if (semiInput) {
+      semiInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleSubmitSemi();
+      });
+      setTimeout(function() { semiInput.focus(); }, 100);
+    }
+  } else {
+    // free
+    inputArea.innerHTML =
+      '<div class="free-area">'
+      + '<input type="text" id="freeInput" placeholder="Type your reply freely...">'
+      + '<button class="btn-action btn-secondary" data-action="submit-free">Send</button>'
+      + '</div>';
+    var freeInput = document.getElementById('freeInput');
+    if (freeInput) {
+      freeInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleSubmitFree();
+      });
+      setTimeout(function() { freeInput.focus(); }, 100);
+    }
+  }
+}
+
+// -- MISSION: handle user responses --
+function handlePickGuided(index) {
+  var scene = getScene();
+  var round = scene.mission.rounds[currentRound];
+  var opt = round.guidedOptions[index];
+
+  // disable all options
+  var options = document.querySelectorAll('.guided-option');
+  for (var i = 0; i < options.length; i++) {
+    options[i].disabled = true;
+    options[i].style.pointerEvents = 'none';
+  }
+  // highlight — find by data-index since options may be shuffled
+  for (var j = 0; j < options.length; j++) {
+    if (parseInt(options[j].getAttribute('data-index')) === index) {
+      options[j].classList.add(opt.correct ? 'picked-correct' : 'picked-wrong');
+      break;
+    }
+  }
+
+  roundResults.push({ round: currentRound, correct: opt.correct, mode: 'guided' });
+
+  // show user message
+  var chatArea = document.getElementById('chatArea');
+  dialogueHistory.push({ speaker: 'user', text: opt.text });
+  chatArea.innerHTML +=
+    '<div class="msg-bubble msg-user">' + opt.text
+    + '<div class="msg-actions"><button class="msg-btn" data-action="speak-msg" data-text="' + opt.text.replace(/"/g, '&quot;').replace(/'/g, '&#39;') + '">🔊</button></div>'
+    + '</div>';
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // if wrong, show feedback recast
+  if (!opt.correct) {
+    var correctOpt = null;
+    for (var j = 0; j < round.guidedOptions.length; j++) {
+      if (round.guidedOptions[j].correct) { correctOpt = round.guidedOptions[j]; break; }
+    }
+    setTimeout(function() {
+      chatArea.innerHTML +=
+        '<div class="msg-bubble msg-recast">'
+        + '<div class="recast-label">💡 Try this instead:</div>'
+        + (correctOpt ? correctOpt.text : '') + '<br><small>' + opt.feedback + '</small>'
+        + '</div>';
+      chatArea.scrollTop = chatArea.scrollHeight;
+      proceedAfterResponse();
+    }, 600);
+  } else {
+    setTimeout(function() { proceedAfterResponse(); }, 500);
+  }
+}
+
+function handleSubmitSemi() {
+  var input = document.getElementById('semiInput');
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) return;
+  var scene = getScene();
+  var round = scene.mission.rounds[currentRound];
+
+  // check against keywords
+  var keywords = round.semiGuidedHints;
+  var matchCount = 0;
+  var lowerText = text.toLowerCase();
+  for (var i = 0; i < keywords.length; i++) {
+    if (lowerText.indexOf(keywords[i].toLowerCase()) !== -1) matchCount++;
+  }
+  var isCorrect = matchCount >= Math.max(1, Math.floor(keywords.length * 0.4));
+
+  roundResults.push({ round: currentRound, correct: isCorrect, mode: 'semiGuided', text: text });
+
+  var chatArea = document.getElementById('chatArea');
+  dialogueHistory.push({ speaker: 'user', text: text });
+  chatArea.innerHTML +=
+    '<div class="msg-bubble msg-user">' + text + '</div>';
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // always show recast/feedback for semi-guided
+  var correctOpt = null;
+  for (var j = 0; j < round.guidedOptions.length; j++) {
+    if (round.guidedOptions[j].correct) { correctOpt = round.guidedOptions[j]; break; }
+  }
+  setTimeout(function() {
+    var fbClass = isCorrect ? 'msg-recast' : 'msg-recast';
+    chatArea.innerHTML +=
+      '<div class="msg-bubble ' + fbClass + '">'
+      + '<div class="recast-label">' + (isCorrect ? '✅ Nice! Suggested phrasing:' : '💡 Try this:') + '</div>'
+      + (correctOpt ? correctOpt.text : '')
+      + '</div>';
+    chatArea.scrollTop = chatArea.scrollHeight;
+    proceedAfterResponse();
+  }, 600);
+}
+
+function handleSubmitFree() {
+  var input = document.getElementById('freeInput');
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) return;
+  var scene = getScene();
+  var round = scene.mission.rounds[currentRound];
+
+  // lenient keyword check
+  var keywords = round.freeKeywords;
+  var matchCount = 0;
+  var lowerText = text.toLowerCase();
+  for (var i = 0; i < keywords.length; i++) {
+    if (lowerText.indexOf(keywords[i].toLowerCase()) !== -1) matchCount++;
+  }
+  var isCorrect = matchCount >= 1; // very lenient — communicative success
+
+  roundResults.push({ round: currentRound, correct: isCorrect, mode: 'free', text: text });
+
+  var chatArea = document.getElementById('chatArea');
+  dialogueHistory.push({ speaker: 'user', text: text });
+  chatArea.innerHTML +=
+    '<div class="msg-bubble msg-user">' + text + '</div>';
+  chatArea.scrollTop = chatArea.scrollHeight;
+  proceedAfterResponse();
+}
+
+function proceedAfterResponse() {
+  var scene = getScene();
+  currentRound++;
+  if (currentRound < scene.mission.rounds.length) {
+    showNPCLine(scene, currentRound);
+  } else {
+    // all rounds done — show completion prompt, user decides when to proceed
+    showCompletionPrompt(scene);
+  }
+}
+
+function showCompletionPrompt(scene) {
+  var inputArea = document.getElementById('missionInput');
+  if (!inputArea) return;
+  inputArea.innerHTML =
+    '<div style="text-align:center;padding:24px;">'
+    + '<p style="font-size:20px;margin-bottom:6px;">\u{1F389} All rounds complete!</p>'
+    + '<p style="font-size:14px;color:#64748b;margin-bottom:18px;">You\'ve finished all ' + scene.mission.rounds.length + ' rounds of this conversation.</p>'
+    + '<button class="btn-action btn-primary" data-action="go-debrief" style="font-size:16px;padding:14px 36px;">\u{1F4CA} View My Results \u2192</button>'
+    + '</div>';
+  var bottombar = document.getElementById('bottombar');
+  if (bottombar) {
+    bottombar.innerHTML = '<div></div><div></div>';
+  }
+}
+
+function showTransitionThenDebrief(scene) {
+  var overlay = document.createElement('div');
+  overlay.className = 'transition-overlay';
+  overlay.id = 'transitionOverlay';
+  overlay.innerHTML =
+    '<div class="transition-card">'
+    + '<div class="t-icon">' + scene.debrief.emoji + '</div>'
+    + '<div class="t-title">' + scene.debrief.title + '</div>'
+    + '<div class="t-sub">Analyzing your performance...</div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function() {
+    var el = document.getElementById('transitionOverlay');
+    if (el) el.remove();
+    currentPhase = 'debrief';
+    showScreen('scene');
+    renderPhase();
+  }, 2000);
+}
+
+// -- DEBRIEF --
+function renderDebrief(content, bottombar, scene) {
+  // Calculate scores
+  var correctCount = 0;
+  for (var i = 0; i < roundResults.length; i++) {
+    if (roundResults[i].correct) correctCount++;
+  }
+  var taskScore = Math.round((correctCount / roundResults.length) * 100);
+  var accuracyScore = difficultyMode === 'guided'
+    ? taskScore
+    : Math.round(taskScore * 0.85 + Math.random() * 10); // slightly varied for free/semi
+  accuracyScore = Math.min(100, Math.max(40, accuracyScore));
+
+  // Register score — based on expected register matching
+  var registerCorrect = 0;
+  for (var j = 0; j < roundResults.length; j++) {
+    // In guided mode, if correct, register is implicitly right
+    // In semi/free, give some credit
+    if (roundResults[j].correct) registerCorrect++;
+  }
+  var registerScore = Math.round((registerCorrect / roundResults.length) * 100);
+  if (difficultyMode === 'free') registerScore = Math.min(100, registerScore + 5); // bonus for trying free
+
+  var scoreData = {
+    task: taskScore,
+    accuracy: accuracyScore,
+    register: registerScore,
+    total: Math.round((taskScore + accuracyScore + registerScore) / 3),
+    correctCount: correctCount,
+    totalRounds: roundResults.length,
+    mode: difficultyMode
+  };
+
+  // Save progress
+  setSceneProgress(scene.id, scoreData);
+
+  // Determine praise quality
+  var emoji = scoreData.total >= 80 ? '🌟' : scoreData.total >= 60 ? '👍' : '💪';
+
+  content.innerHTML =
+    '<div class="phase-panel active">'
+    + '<div class="debrief-panel">'
+    + '<div class="debrief-header">'
+    + '<div class="big-emoji">' + emoji + '</div>'
+    + '<h2>' + scene.debrief.title + '</h2>'
+    + '</div>'
+    + '<div class="score-bars">'
+    + '<div class="score-row"><span class="score-label">🎯 Task Complete</span><div class="score-track"><div class="score-fill task-fill" style="width:' + scoreData.task + '%"></div></div><span class="score-pct">' + scoreData.task + '%</span></div>'
+    + '<div class="score-row"><span class="score-label">📝 Accuracy</span><div class="score-track"><div class="score-fill accuracy-fill" style="width:' + scoreData.accuracy + '%"></div></div><span class="score-pct">' + scoreData.accuracy + '%</span></div>'
+    + '<div class="score-row"><span class="score-label">🗣️ Register</span><div class="score-track"><div class="score-fill register-fill" style="width:' + scoreData.register + '%"></div></div><span class="score-pct">' + scoreData.register + '%</span></div>'
+    + '</div>'
+    + '<div class="debrief-feedback">'
+    + '<p><span class="fb-praise">' + emoji + ' ' + scene.debrief.praise + '</span></p>'
+    + '<p class="mt-12"><span class="fb-note">📌 Note:</span> ' + scene.debrief.note + '</p>'
+    + '<p class="mt-12"><span class="fb-tip">💡 Register Insight:</span> ' + scene.debrief.registerTakeaway + '</p>'
+    + (scene.debrief.tip ? '<p class="mt-12"><span class="fb-note">🔍 Tip:</span> ' + scene.debrief.tip + '</p>' : '')
+    + '<p class="mt-12" style="color:#94a3b8;font-size:13px;">'
+    + 'Completed with <strong>' + difficultyMode.charAt(0).toUpperCase() + difficultyMode.slice(1) + '</strong> mode · '
+    + scoreData.correctCount + '/' + scoreData.totalRounds + ' rounds correct'
+    + '</p>'
+    + '</div>'
+    + '<div class="debrief-actions">'
+    + '<button class="btn-action btn-secondary" data-action="replay-scene">🔁 Replay This Mission</button>'
+    + (getSceneIndex(scene.id) < SCENES.length - 1
+      ? '<button class="btn-action btn-success" data-action="next-scene">▶ Next Mission →</button>'
+      : '<button class="btn-action btn-primary" data-action="go-hub">🏆 Back to Mission Center</button>')
+    + '</div>'
+    + '</div>'
+    + '</div>';
+  bottombar.innerHTML = '<div></div><div></div>';
+}
+
+// ============================================================
+// HUB RENDERING
+// ============================================================
+function renderHub() {
+  var container = document.getElementById('taskCards');
+  var progress = loadProgress();
+  var html = '';
+  for (var i = 0; i < SCENES.length; i++) {
+    var scene = SCENES[i];
+    var prog = progress[scene.id];
+    var isUnlocked = (i === 0) || (progress[SCENES[i-1].id] && progress[SCENES[i-1].id].completed);
+    var isCompleted = prog && prog.completed;
+
+    var badgeHtml = '';
+    if (isCompleted) {
+      badgeHtml = '<div class="card-badge completed">✅ Completed</div>';
+      if (prog.best !== undefined) {
+        badgeHtml += '<div class="card-score">⭐ Best: ' + prog.best + '%</div>';
+      }
+    } else if (isUnlocked) {
+      badgeHtml = '<div class="card-badge current">🎯 Ready</div>';
+    } else {
+      badgeHtml = '<div class="card-badge locked-badge">🔒 Locked</div>';
+    }
+
+    html +=
+      '<div class="task-card ' + scene.cssClass + (isUnlocked ? '' : ' locked') + '" '
+      + 'data-action="' + (isUnlocked ? 'enter-scene' : '') + '" '
+      + 'data-scene="' + scene.id + '">'
+      + '<div class="icon">' + scene.icon + '</div>'
+      + '<h3>' + scene.title + '</h3>'
+      + '<p class="card-subtitle">' + scene.npc.role + '</p>'
+      + badgeHtml
+      + (isUnlocked ? '' : '<div class="card-lock">🔒</div>')
+      + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+// ============================================================
+// PREP EXERCISE HANDLING
+// ============================================================
+var _prepAnswered = false;
+
+function handlePrepAnswer(index) {
+  if (_prepAnswered) return;
+  _prepAnswered = true;
+  var scene = getScene();
+  var ex = scene.prep.exercise;
+  var opt = ex.options[index];
+
+  var exOpts = document.querySelectorAll('#exOptions .ex-option');
+  for (var i = 0; i < exOpts.length; i++) {
+    exOpts[i].style.pointerEvents = 'none';
+    var exOptIdx = parseInt(exOpts[i].getAttribute('data-index'));
+    if (ex.options[exOptIdx].correct) exOpts[i].classList.add('correct');
+    if (exOptIdx === index && !opt.correct) exOpts[i].classList.add('wrong');
+  }
+
+  var fb = document.getElementById('exFeedback');
+  if (opt.correct) {
+    prepScore = 1;
+    fb.innerHTML = '<span style="color:#16a34a;">✅ Correct! Well done.</span>';
+  } else {
+    prepScore = 0;
+    fb.innerHTML = '<span style="color:#dc2626;">❌ Not quite. The correct answer is highlighted in green.</span>';
+  }
+
+  var btnGo = document.getElementById('btnGoMission');
+  if (btnGo) btnGo.disabled = false;
+}
+
+// ============================================================
+// GLOBAL EVENT HANDLER (event delegation)
+// ============================================================
+document.addEventListener('click', function(e) {
+  var target = e.target;
+  // walk up for data-action
+  while (target && target !== document.body) {
+    var action = target.getAttribute('data-action');
+    if (action) break;
+    target = target.parentElement;
+  }
+  if (!target || target === document.body) return;
+  var action = target.getAttribute('data-action');
+
+  switch (action) {
+    case 'go-hub':
+      currentSceneId = null;
+      currentPhase = null;
+      showScreen('hub');
+      renderHub();
+      break;
+
+    case 'back-to-hub':
+      currentSceneId = null;
+      currentPhase = null;
+      showScreen('hub');
+      renderHub();
+      break;
+
+    case 'enter-scene':
+      var sceneId = target.getAttribute('data-scene');
+      if (!sceneId) return;
+      currentSceneId = sceneId;
+      currentPhase = 'briefing';
+      difficultyMode = 'guided';
+      roundResults = [];
+      dialogueHistory = [];
+      showScreen('scene');
+      renderPhase();
+      break;
+
+    case 'go-prep':
+      currentPhase = 'prep';
+      _prepAnswered = false;
+      prepScore = 0;
+      prepTotal = 1;
+      renderPhase();
+      break;
+
+    case 'go-mission':
+      currentPhase = 'mission';
+      renderPhase();
+      break;
+
+    case 'replay-scene':
+      currentPhase = 'mission';
+      difficultyMode = 'guided';
+      roundResults = [];
+      dialogueHistory = [];
+      renderPhase();
+      break;
+
+    case 'next-scene':
+      var curIdx = getSceneIndex(currentSceneId);
+      if (curIdx < SCENES.length - 1) {
+        currentSceneId = SCENES[curIdx + 1].id;
+        currentPhase = 'briefing';
+        difficultyMode = 'guided';
+        roundResults = [];
+        dialogueHistory = [];
+        showScreen('scene');
+        renderPhase();
+      }
+      break;
+
+    case 'set-mode':
+      var mode = target.getAttribute('data-mode');
+      if (mode && mode !== difficultyMode) {
+        difficultyMode = mode;
+        var scene = getScene();
+        if (currentPhase === 'mission' && scene) {
+          renderMissionInput(scene, currentRound);
+          var bottombar = document.getElementById('bottombar');
+          renderBottombarMission(bottombar);
+        }
+      }
+      break;
+
+    case 'pick-guided':
+      handlePickGuided(parseInt(target.getAttribute('data-index')));
+      break;
+
+    case 'submit-semi':
+      handleSubmitSemi();
+      break;
+
+    case 'submit-free':
+      handleSubmitFree();
+      break;
+
+    case 'use-hint':
+      var hint = target.getAttribute('data-hint');
+      var semiInput = document.getElementById('semiInput');
+      if (semiInput && hint) {
+        var currentVal = semiInput.value;
+        semiInput.value = currentVal + (currentVal ? ' ' : '') + hint;
+        semiInput.focus();
+      }
+      break;
+
+    case 'prep-answer':
+      handlePrepAnswer(parseInt(target.getAttribute('data-index')));
+      break;
+
+    case 'speak-word':
+      var word = target.getAttribute('data-word');
+      if (word) speakText(word, 0.8);
+      break;
+
+    case 'go-debrief':
+      var sc = getScene();
+      if (sc) showTransitionThenDebrief(sc);
+      break;
+
+    case 'speak-msg':
+      var msgText = target.getAttribute('data-text');
+      if (msgText) speakText(msgText, 0.85);
+      break;
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  warmUpSpeech();
+  // start on start screen (already active in HTML)
+  // Pre-render hub for fast switching
+  renderHub();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>

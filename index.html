@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mia — Learning Designer Portfolio</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f8fafc; color: #1e293b; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* Hero */
+.hero {
+  background: linear-gradient(160deg, #0f172a 0%, #1e3a5f 100%);
+  color: #fff; text-align: center; padding: 80px 24px 64px;
+}
+.hero h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 12px; }
+.hero .role { font-size: 20px; color: #60a5fa; font-weight: 500; margin-bottom: 8px; }
+.hero .tagline { font-size: 15px; color: #94a3b8; max-width: 520px; margin: 0 auto; }
+
+.badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+.badge {
+  padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  background: rgba(255,255,255,0.1); color: #cbd5e1;
+}
+
+/* About */
+.about { padding: 48px 0; text-align: center; }
+.about p { max-width: 640px; margin: 0 auto; font-size: 15px; color: #475569; }
+
+/* Cases */
+.cases { padding: 0 0 64px; }
+.cases h2 { text-align: center; font-size: 28px; margin-bottom: 32px; color: #1e293b; }
+.case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.case-card {
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  transition: transform 0.25s, box-shadow 0.25s;
+  display: flex; flex-direction: column;
+}
+.case-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+.card-top {
+  padding: 32px 24px 20px; text-align: center; color: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.card-top.c1 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.card-top.c2 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.card-top.c3 { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+.card-top .icon { font-size: 44px; }
+.card-top h3 { font-size: 20px; font-weight: 700; }
+.card-top .audience { font-size: 13px; opacity: 0.85; }
+
+.card-body { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.card-body .feature-list { list-style: none; font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 8px; }
+.card-body .feature-list li::before { content: '✓ '; color: #16a34a; font-weight: 700; }
+.card-body .tech-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.tech-tag {
+  padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+  background: #f1f5f9; color: #64748b;
+}
+.card-footer { padding: 0 24px 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-card {
+  padding: 9px 20px; border-radius: 20px; font-size: 14px; font-weight: 600;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+  transition: all 0.15s;
+}
+.btn-card.primary { background: #1e293b; color: #fff; }
+.btn-card.primary:hover { background: #0f172a; }
+.btn-card.secondary { background: #f1f5f9; color: #475569; }
+.btn-card.secondary:hover { background: #e2e8f0; }
+
+/* Footer */
+.footer { text-align: center; padding: 32px 24px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 13px; }
+.footer a { color: #64748b; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .hero { padding: 48px 16px 40px; }
+  .hero h1 { font-size: 30px; }
+  .case-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="container">
+    <h1>👋 Hi, I'm Mia</h1>
+    <p class="role">Learning Designer</p>
+    <p class="tagline">I design learning experiences that meet learners where they are — whether they're 7, 12, or 35. Game-based learning, TBLT, adaptive difficulty, and interactive courseware.</p>
+    <div class="badges">
+      <span class="badge">🎮 Game-Based Learning</span>
+      <span class="badge">📐 Bloom's Taxonomy</span>
+      <span class="badge">🗣️ TBLT</span>
+      <span class="badge">🧠 Krashen i+1</span>
+      <span class="badge">📊 Adaptive Scaffolding</span>
+      <span class="badge">🌐 HTML/CSS/JS</span>
+    </div>
+  </div>
+</header>
+
+<!-- About -->
+<section class="about">
+  <div class="container">
+    <p>I've taught English and Japanese to learners aged 3 to adult. My portfolio spans three distinct instructional challenges — a gamified vocabulary app for children, a self-study unit for teens, and an adaptive business-English simulation for adults. Each case is a <strong>fully functional interactive prototype</strong> you can open and try right now.</p>
+  </div>
+</section>
+
+<!-- Cases -->
+<section class="cases">
+  <div class="container">
+    <h2>📂 Portfolio Cases</h2>
+    <div class="case-grid">
+
+      <!-- Case 1 -->
+      <div class="case-card">
+        <div class="card-top c1">
+          <span class="icon">🌴</span>
+          <h3>Jungle Word Quest</h3>
+          <span class="audience">Ages 7 · Beginner · Game-Based</span>
+        </div>
+        <div class="card-body">
+          <ul class="feature-list">
+            <li>3-level unlockable word game</li>
+            <li>Auto-pronunciation + replay</li>
+            <li>Instant correct/incorrect feedback</li>
+            <li>Background music + sound effects</li>
+            <li>Bloom's: Remember → Understand → Apply</li>
+          </ul>
+          <div class="tech-tags">
+            <span class="tech-tag">Web Speech API</span>
+            <span class="tech-tag">Web Audio API</span>
+            <span class="tech-tag">Event Delegation</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="case-1-jungle-word-quest/index-v2.html" class="btn-card primary">▶ Open Courseware</a>
+          <a href="case-1-jungle-word-quest/lesson-plan.md" class="btn-card secondary">📄 Lesson Plan</a>
+        </div>
+      </div>
+
+      <!-- Case 2 -->
+      <div class="case-card">
+        <div class="card-top c2">
+          <span class="icon">🏫</span>
+          <h3>My School Life</h3>
+          <span class="audience">Ages 12 · Elementary · Self-Study Unit</span>
+        </div>
+        <div class="card-body">
+          <ul class="feature-list">
+            <li>8-lesson complete unit plan</li>
+            <li>Spiral progression path</li>
+            <li>4 exercise types (MC / fill / match / sort)</li>
+            <li>Self-paced scoring + lesson unlock</li>
+            <li>TBLT task-driven design</li>
+          </ul>
+          <div class="tech-tags">
+            <span class="tech-tag">Multi-Exercise Engine</span>
+            <span class="tech-tag">TTS</span>
+            <span class="tech-tag">Scoring System</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="case-2-school-life/lesson-slides-v3.html" class="btn-card primary">▶ Open Courseware</a>
+          <a href="case-2-school-life/unit-plan.md" class="btn-card secondary">📄 Unit Plan</a>
+        </div>
+      </div>
+
+      <!-- Case 3 -->
+      <div class="case-card">
+        <div class="card-top c3">
+          <span class="icon">💼</span>
+          <h3>BizTrip English</h3>
+          <span class="audience">Adults · A0–B1 · Story-Driven Simulation</span>
+        </div>
+        <div class="card-body">
+          <ul class="feature-list">
+            <li>3-mission business trip narrative</li>
+            <li>3-tier adaptive difficulty (guided → free)</li>
+            <li>Register-awareness scoring (unique)</li>
+            <li>Real-time mode switching</li>
+            <li>9 learning theories integrated</li>
+          </ul>
+          <div class="tech-tags">
+            <span class="tech-tag">Data-Driven Arch</span>
+            <span class="tech-tag">Fisher-Yates Shuffle</span>
+            <span class="tech-tag">localStorage</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="case-3-ai-speaking/storyline-courseware.html" class="btn-card primary">▶ Open Courseware</a>
+          <a href="case-3-ai-speaking/storyline-courseware-design.md" class="btn-card secondary">📄 Design Doc</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>Built with ❤️ by Mia · <a href="https://github.com/winnwu-hub">@winnwu-hub</a></p>
+</footer>
+
+</body>
+</html>

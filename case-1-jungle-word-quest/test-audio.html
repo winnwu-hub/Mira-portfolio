@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Audio Test</title>
+<style>body{font-family:sans-serif;padding:2rem}button{font-size:1.2rem;padding:12px 24px;margin:8px}</style></head>
+<body>
+<h2>🔊 Browser Audio Diagnostic</h2>
+
+<h3>1. Speech Synthesis (TTS)</h3>
+<p id="tts-status">Checking...</p>
+<button onclick="testTTS()">🗣️ Say "Hello dog"</button>
+<div id="tts-log"></div>
+
+<h3>2. Web Audio API</h3>
+<p id="wa-status">Checking...</p>
+<button onclick="testBeep()">🔔 Play Beep</button>
+
+<h3>3. HTML5 Audio (Google TTS URL)</h3>
+<p id="html5-status">Checking...</p>
+<button onclick="testHTML5()">🌐 Play "dog" via Google TTS</button>
+
+<script>
+var log = document.getElementById('tts-log');
+
+// Test 1: Speech Synthesis
+if ('speechSynthesis' in window) {
+  document.getElementById('tts-status').textContent = '✅ speechSynthesis API available';
+  speechSynthesis.getVoices(); // warm up
+  setTimeout(function() {
+    var voices = speechSynthesis.getVoices();
+    var enVoices = voices.filter(function(v) { return v.lang.indexOf('en') === 0; });
+    log.innerHTML += '<p>Total voices: ' + voices.length + '</p>';
+    log.innerHTML += '<p>English voices: ' + enVoices.length + '</p>';
+    if (enVoices.length === 0) {
+      log.innerHTML += '<p style="color:red">⚠️ No English voices installed! Speech won\'t work for English words.</p>';
+      log.innerHTML += '<p>On Windows: Settings → Time & Language → Speech → Add voices → English</p>';
+    }
+    enVoices.forEach(function(v) { log.innerHTML += '<p>  - ' + v.name + ' (' + v.lang + ')</p>'; });
+  }, 200);
+} else {
+  document.getElementById('tts-status').innerHTML = '❌ speechSynthesis NOT available in this browser';
+}
+
+function testTTS() {
+  log.innerHTML += '<p>👉 Speaking "Hello dog"...</p>';
+  var u = new SpeechSynthesisUtterance('Hello dog');
+  u.lang = 'en-US'; u.rate = 0.85;
+  u.onstart = function() { log.innerHTML += '<p style="color:green">✅ Speech started!</p>'; };
+  u.onend = function() { log.innerHTML += '<p style="color:green">✅ Speech ended.</p>'; };
+  u.onerror = function(e) { log.innerHTML += '<p style="color:red">❌ Speech error: ' + e.error + '</p>'; };
+  speechSynthesis.speak(u);
+}
+
+// Test 2: Web Audio
+try {
+  var ctx = new (window.AudioContext || window.webkitAudioContext)();
+  document.getElementById('wa-status').textContent = '✅ Web Audio API available';
+} catch(e) {
+  document.getElementById('wa-status').textContent = '❌ Web Audio API NOT available: ' + e.message;
+}
+
+function testBeep() {
+  try {
+    var c = new (window.AudioContext || window.webkitAudioContext)();
+    var o = c.createOscillator();
+    o.type = 'sine'; o.frequency.value = 660;
+    var g = c.createGain(); g.gain.value = 0.3;
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + 0.3);
+    log.innerHTML += '<p style="color:green">✅ Beep played!</p>';
+  } catch(e) {
+    log.innerHTML += '<p style="color:red">❌ Beep failed: ' + e.message + '</p>';
+  }
+}
+
+// Test 3: HTML5 Audio
+var audioTest = new Audio();
+audioTest.oncanplaythrough = function() {
+  document.getElementById('html5-status').textContent = '✅ HTML5 Audio with Google TTS works';
+};
+audioTest.onerror = function() {
+  document.getElementById('html5-status').textContent = '⚠️ Google TTS unreachable (may need internet)';
+};
+audioTest.src = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=dog';
+</script>
+</body></html>

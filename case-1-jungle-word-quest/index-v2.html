@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jungle Word Quest 🌿</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --g-dark: #1b5e20; --g-mid: #2d8a4e; --g-light: #7bc67e;
+  --gold: #f9a825; --gold-light: #ffe082;
+  --sky: #64b5f6; --sky-light: #bbdefb;
+  --coral: #ff6e40;
+  --card: #ffffff; --text: #2e3b2e; --text-light: #5a6b5a;
+  --bg: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 30%, #fff9c4 70%, #fff8e1 100%);
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 20px;
+  --bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
+.game-container {
+  width: 100%; max-width: 700px; height: 100vh; max-height: 850px;
+  display: flex; flex-direction: column; background: var(--card);
+  border-radius: 24px; box-shadow: var(--shadow), 0 12px 60px rgba(0,0,0,0.06);
+  overflow: hidden; position: relative;
+}
+@media (max-width: 720px) { .game-container { max-width: 100%; border-radius: 0; max-height: 100vh; } }
+
+/* ========== TOP BAR ========== */
+.top-bar {
+  background: linear-gradient(135deg, var(--g-dark), var(--g-mid));
+  color: white; padding: 14px 20px; display: flex;
+  align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.top-bar .title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.progress-strip { display: flex; gap: 8px; }
+.progress-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.25); display: flex;
+  align-items: center; justify-content: center; font-size: 0.85rem;
+  font-weight: 700; transition: all 0.4s var(--bounce); position: relative;
+}
+.progress-dot.done { background: var(--gold); color: var(--g-dark); }
+.progress-dot.active { background: white; color: var(--g-dark); transform: scale(1.2); box-shadow: 0 0 16px rgba(255,255,255,0.5); }
+.star-badge {
+  font-size: 0.65rem; position: absolute; bottom: -4px; right: -4px;
+  background: var(--gold-light); border-radius: 50%; width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center; color: var(--g-dark);
+}
+
+/* ========== MAIN AREA ========== */
+.main-area { flex: 1; overflow-y: auto; padding: 24px 24px 16px; display: flex; flex-direction: column; }
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* --- Start Screen --- */
+.start-screen { align-items: center; justify-content: center; text-align: center; gap: 20px; }
+.jungle-scene { font-size: 5rem; line-height: 1; animation: float 3s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.start-screen h1 {
+  font-size: 2rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--g-dark), var(--g-mid));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.start-screen .tagline { color: var(--text-light); font-size: 1rem; max-width: 340px; }
+
+.btn {
+  border: none; cursor: pointer; font-family: inherit; font-weight: 700;
+  font-size: 1.05rem; padding: 14px 36px; border-radius: 50px;
+  transition: all 0.2s ease; display: inline-flex; align-items: center;
+  gap: 8px; letter-spacing: 0.02em; outline: none;
+}
+.btn-play {
+  background: linear-gradient(135deg, var(--gold), #ffb300);
+  color: var(--g-dark); font-size: 1.2rem; padding: 16px 48px;
+  box-shadow: 0 6px 24px rgba(249,168,37,0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 6px 24px rgba(249,168,37,0.4); }
+  50% { box-shadow: 0 6px 36px rgba(249,168,37,0.65); transform: scale(1.03); }
+}
+.btn-play:hover { transform: translateY(-2px); }
+.btn-play:active { transform: scale(0.97); }
+.btn-secondary { background: white; color: var(--g-mid); border: 2px solid var(--g-light); }
+.btn-secondary:hover { background: #f1f8e9; }
+.btn-small { font-size: 0.9rem; padding: 10px 24px; }
+
+/* --- Level Intro --- */
+.level-intro { align-items: center; justify-content: center; text-align: center; gap: 16px; }
+.level-badge {
+  background: linear-gradient(135deg, var(--gold), #ffb300);
+  color: var(--g-dark); font-weight: 800; font-size: 0.9rem;
+  padding: 6px 18px; border-radius: 50px;
+}
+.level-intro h2 { font-size: 1.5rem; font-weight: 700; }
+.level-intro .theme-icons { font-size: 3rem; }
+.level-intro .info { color: var(--text-light); font-size: 0.9rem; }
+
+/* --- Quiz --- */
+.quiz-area { gap: 20px; flex: 1; }
+.question-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.q-counter { font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+.q-emoji { font-size: 5rem; line-height: 1; animation: popIn 0.4s var(--bounce); }
+@keyframes popIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Speaker button */
+.speaker-btn {
+  border-radius: 16px; border: 2px solid #ddd;
+  background: white; font-size: 1.05rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 8px 18px;
+  transition: all 0.15s ease; outline: none; flex-shrink: 0;
+  font-weight: 700; color: var(--text); font-family: inherit;
+}
+.speaker-btn:hover { border-color: var(--sky); background: var(--sky-light); transform: scale(1.05); }
+.speaker-btn:active { transform: scale(0.94); }
+.speaker-btn.speaking { border-color: var(--sky); background: var(--sky); color: white; animation: speakerPulse 0.6s ease-in-out infinite; }
+@keyframes speakerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(100,181,246,0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(100,181,246,0); }
+}
+
+/* Options */
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.option-btn {
+  background: #f5f7f5; border: 3px solid transparent; border-radius: var(--radius);
+  padding: 18px 16px; font-size: 1.2rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s ease; text-align: center; color: var(--text);
+  font-family: inherit; outline: none;
+}
+.option-btn:hover { background: #e8f0e8; transform: translateY(-2px); }
+.option-btn:active { transform: scale(0.96); }
+.option-btn.correct { background: #c8e6c9; border-color: var(--g-mid); animation: correctFlash 0.6s ease; pointer-events: none; }
+.option-btn.wrong { background: #ffcdd2; border-color: var(--coral); animation: shake 0.4s ease; pointer-events: none; }
+.option-btn.disabled { pointer-events: none; opacity: 0.7; }
+@keyframes correctFlash { 0%, 100% { background: #c8e6c9; } 50% { background: #a5d6a7; } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); } 40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
+}
+
+/* Letter Scramble */
+.scramble-area { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.answer-slot { display: flex; gap: 8px; min-height: 54px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.answer-slot .letter {
+  width: 42px; height: 48px; background: var(--sky-light); border: 2px dashed var(--sky);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 700; color: var(--text); transition: all 0.2s ease;
+}
+.answer-slot .letter.filled { background: white; border: 2px solid var(--g-mid); color: var(--g-dark); }
+.answer-slot .letter.correct-slot { background: #c8e6c9; border-color: #2d8a4e; }
+.letter-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.letter-chip {
+  width: 46px; height: 50px; background: white; border: 2px solid #ddd;
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease;
+  color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.06); outline: none;
+}
+.letter-chip:hover { transform: translateY(-3px); box-shadow: 0 4px 14px rgba(0,0,0,0.12); border-color: var(--g-light); }
+.letter-chip:active { transform: scale(0.9); }
+.letter-chip.used { opacity: 0.3; pointer-events: none; transform: scale(0.85); }
+.letter-chip.chip-disabled { pointer-events: none; opacity: 0.4; }
+.btn-reset {
+  background: transparent; border: 1px solid #ddd; color: var(--text-light);
+  font-size: 0.85rem; padding: 8px 20px; border-radius: 50px; cursor: pointer;
+  font-family: inherit; outline: none;
+}
+.btn-reset:hover { background: #f5f5f5; }
+
+/* Feedback + Next button */
+.feedback-inline { text-align: center; min-height: 28px; font-weight: 700; font-size: 1.1rem; }
+.feedback-inline.good { color: var(--g-mid); }
+.feedback-inline.ops { color: var(--coral); }
+.btn-next {
+  display: inline-block; margin-left: 10px;
+  background: var(--g-mid); color: white; border: none;
+  padding: 6px 16px; border-radius: 50px; font-weight: 700;
+  font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  vertical-align: middle; transition: all 0.15s ease;
+}
+.btn-next:hover { background: var(--g-dark); transform: scale(1.05); }
+.btn-next:active { transform: scale(0.92); }
+
+/* Level Complete */
+.level-complete { align-items: center; justify-content: center; text-align: center; gap: 16px; }
+.stars-display { font-size: 3.5rem; letter-spacing: 6px; }
+.stars-display .star { display: inline-block; animation: starPop 0.5s var(--bounce) both; }
+.stars-display .star:nth-child(1) { animation-delay: 0.1s; }
+.stars-display .star:nth-child(2) { animation-delay: 0.3s; }
+.stars-display .star:nth-child(3) { animation-delay: 0.5s; }
+@keyframes starPop {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.level-complete .score-text { font-size: 1.1rem; color: var(--text-light); }
+
+/* Victory */
+.victory-screen { align-items: center; justify-content: center; text-align: center; gap: 18px; }
+.victory-screen .trophy { font-size: 5rem; animation: float 2s ease-in-out infinite; }
+.victory-screen h2 {
+  font-size: 1.8rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), #ff8f00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.final-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 400px; }
+.stat-card { background: #f9faf9; border-radius: 16px; padding: 14px 10px; text-align: center; }
+.stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--g-dark); }
+.stat-card .stat-label { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+.review-badge {
+  background: #e8f5e9; color: var(--g-mid); font-size: 0.75rem;
+  font-weight: 700; padding: 4px 12px; border-radius: 50px; display: inline-block;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 480px) {
+  .main-area { padding: 16px; }
+  .start-screen h1 { font-size: 1.5rem; }
+  .q-emoji { font-size: 3.5rem; }
+  .option-btn { font-size: 1rem; padding: 14px 12px; }
+  .letter-chip { width: 38px; height: 42px; font-size: 1.1rem; }
+  .answer-slot .letter { width: 34px; height: 40px; font-size: 1.1rem; }
+  .final-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <div class="top-bar">
+    <span class="title">🌿 Jungle Word Quest</span>
+    <div class="progress-strip" id="progressDots">
+      <div class="progress-dot" data-lvl="1">1</div>
+      <div class="progress-dot" data-lvl="2">2</div>
+      <div class="progress-dot" data-lvl="3">3</div>
+    </div>
+  </div>
+  <div class="main-area" id="mainArea"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== DATA ====================
+  var LEVELS = [
+    {
+      id: 1, name: 'Forest Friends', emoji: '🦊',
+      words: [
+        { word: 'dog',    emoji: '🐕', distractors: ['cat', 'frog'] },
+        { word: 'cat',    emoji: '🐈', distractors: ['dog', 'duck'] },
+        { word: 'rabbit', emoji: '🐰', distractors: ['bear', 'fish'] },
+        { word: 'bear',   emoji: '🐻', distractors: ['rabbit', 'bird'] }
+      ],
+      type: 'multiple-choice'
+    },
+    {
+      id: 2, name: 'Sky & Water', emoji: '🐟',
+      words: [
+        { word: 'fish', emoji: '🐟' },
+        { word: 'bird', emoji: '🐦' },
+        { word: 'duck', emoji: '🦆' },
+        { word: 'frog', emoji: '🐸' }
+      ],
+      type: 'scramble'
+    },
+    {
+      id: 3, name: 'Nature Around Us', emoji: '🌳',
+      words: [
+        { word: 'tree',   emoji: '🌳', distractors: ['flower', 'bird'] },
+        { word: 'flower', emoji: '🌸', distractors: ['tree', 'sun'] },
+        { word: 'sun',    emoji: '☀️', distractors: ['duck', 'flower'] }
+      ],
+      type: 'mixed'
+    }
+  ];
+
+  // ==================== STATE ====================
+  var currentLevel = 0, currentQuestion = 0, score = 0;
+  var levelScores = [0, 0, 0], levelStars = [0, 0, 0];
+  var answered = false, totalCoins = 0;
+  var reviewQuestions = [], builtWord = '';
+  var usedLetterIndices = new Set();
+
+  // ==================== DOM ====================
+  var mainArea = document.getElementById('mainArea');
+  var progressDots = document.getElementById('progressDots');
+
+  // ==================== HELPERS ====================
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function render(html) {
+    mainArea.innerHTML = html;
+  }
+
+  function updateDots() {
+    var dots = progressDots.querySelectorAll('.progress-dot');
+    dots.forEach(function(dot, i) {
+      dot.classList.remove('done', 'active');
+      var badge = dot.querySelector('.star-badge');
+      if (badge) badge.remove();
+      if (levelStars[i] > 0) {
+        dot.classList.add('done');
+        var b = document.createElement('span');
+        b.className = 'star-badge'; b.textContent = '⭐';
+        dot.appendChild(b);
+      }
+      if (i === currentLevel && levelStars[i] === 0) dot.classList.add('active');
+    });
+  }
+
+  // Get word object for current question (mirrors showQuestion logic)
+  function getCurrentWord() {
+    var lvl = LEVELS[currentLevel];
+    if (lvl.type === 'mixed' && currentQuestion >= 3) {
+      return reviewQuestions[currentQuestion - 3];
+    }
+    return lvl.words[currentQuestion];
+  }
+
+  // ==================== AUDIO ENGINE ====================
+  // --- Web Audio (sound effects) ---
+  var _actx = null;
+  function ctx() {
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === 'suspended') _actx.resume();
+    return _actx;
+  }
+
+  function tone(freq, dur, vol, delay) {
+    try {
+      var c = ctx();
+      var t = c.currentTime + (delay || 0);
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    } catch(e) {}
+  }
+
+  function ding()  { tone(880, 0.15, 0.25); }
+  function clickSnd(){ tone(660, 0.05, 0.10); }
+  function buzz()  { tone(150, 0.25, 0.12); }
+
+  function levelUpFanfare() {
+    tone(523, 0.12, 0.25, 0);
+    tone(659, 0.12, 0.25, 0.1);
+    tone(784, 0.3,  0.3,  0.2);
+  }
+
+  function victoryFanfare() {
+    var notes = [523, 587, 659, 698, 784, 880, 988, 1047];
+    notes.forEach(function(f, i) {
+      tone(f, i === notes.length - 1 ? 0.5 : 0.1, 0.25, i * 0.08);
+    });
+  }
+
+  // Background music (pentatonic loop for home screen)
+  var _bgTimer = null;
+  var _melody = [523, 587, 659, 784, 880, 784, 659, 587];
+  var _bgIndex = 0;
+
+  function startBgMusic() {
+    if (_bgTimer) return;
+    _bgIndex = 0;
+    function next() {
+      tone(_melody[_bgIndex % _melody.length], 0.4, 0.08);
+      _bgIndex++;
+    }
+    next();
+    _bgTimer = setInterval(next, 800);
+  }
+
+  function stopBgMusic() {
+    if (_bgTimer) { clearInterval(_bgTimer); _bgTimer = null; }
+  }
+
+  // --- Speech Synthesis (word pronunciation) ---
+  var _voicesReady = false;
+  // Pre-load voices
+  if (window.speechSynthesis) {
+    var voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) _voicesReady = true;
+    window.speechSynthesis.onvoiceschanged = function() {
+      _voicesReady = true;
+    };
+  }
+
+  function say(word) {
+    if (!window.speechSynthesis) return;
+    var s = window.speechSynthesis;
+    // Resume if paused
+    if (s.paused) s.resume();
+
+    var u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    u.pitch = 1.1;
+
+    // Pick best English voice available
+    var voices = s.getVoices();
+    if (voices.length > 0) {
+      for (var i = 0; i < voices.length; i++) {
+        if (voices[i].lang === 'en-US' && voices[i].name.indexOf('Google') >= 0) {
+          u.voice = voices[i]; break;
+        }
+      }
+      if (!u.voice) {
+        for (var j = 0; j < voices.length; j++) {
+          if (voices[j].lang.indexOf('en') === 0) { u.voice = voices[j]; break; }
+        }
+      }
+    }
+
+    // Flash the speaker button
+    var btn = document.getElementById('speakerBtn');
+    if (btn) btn.classList.add('speaking');
+    u.onend = function() { if (btn) btn.classList.remove('speaking'); };
+    u.onerror = function() { if (btn) btn.classList.remove('speaking'); };
+
+    // Only cancel if already speaking — Chrome drops utterances when
+    // cancel() + speak() are called together with nothing playing.
+    if (s.speaking) s.cancel();
+    s.speak(u);
+  }
+
+  // ==================== EVENT DELEGATION ====================
+  mainArea.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var act = el.getAttribute('data-action');
+
+    switch (act) {
+      case 'startLevel':
+        clickSnd(); stopBgMusic();
+        startLevel(Number(el.getAttribute('data-level')));
+        break;
+      case 'beginQuiz':
+        clickSnd(); stopBgMusic();
+        beginQuiz(Number(el.getAttribute('data-level')));
+        break;
+      case 'home':
+        clickSnd();
+        showStartScreen();
+        break;
+      case 'answerMC':
+        if (answered) return;
+        answerMC(el.getAttribute('data-word'), el.getAttribute('data-correct'), el);
+        break;
+      case 'pickLetter':
+        if (answered) return;
+        pickLetter(el.getAttribute('data-letter'), Number(el.getAttribute('data-index')), el.getAttribute('data-target'));
+        break;
+      case 'resetScramble':
+        if (answered) return;
+        resetScramble(el.getAttribute('data-target'));
+        break;
+      case 'speak':
+        say(el.getAttribute('data-word'));
+        break;
+      case 'advance':
+        advanceQuestion();
+        break;
+      case 'nextLevel':
+        startLevel(Number(el.getAttribute('data-level')));
+        break;
+      case 'victory':
+        showVictory();
+        break;
+      case 'resetGame':
+        resetGame();
+        break;
+    }
+  });
+
+  // ==================== SCREENS ====================
+  function showStartScreen() {
+    currentLevel = 0; updateDots();
+    startBgMusic();
+    render(
+      '<div class="screen active start-screen">' +
+        '<div class="jungle-scene">🌴🦁🐘🌿</div>' +
+        '<h1>Jungle Word Quest</h1>' +
+        '<p class="tagline">Explore the jungle and learn English words!<br>3 levels · 10+ words · Can you collect all stars?</p>' +
+        '<button class="btn btn-play" data-action="startLevel" data-level="0">🌿 Start Adventure</button>' +
+      '</div>'
+    );
+  }
+
+  function showLevelIntro(idx) {
+    var lvl = LEVELS[idx];
+    if (idx > 0 && levelStars[idx - 1] === 0) {
+      render(
+        '<div class="screen active level-intro">' +
+          '<div style="font-size:4rem">🔒</div>' +
+          '<h2>Level ' + lvl.id + ' Locked</h2>' +
+          '<p class="info">Complete Level ' + (lvl.id - 1) + ' with at least ⭐ to unlock!</p>' +
+          '<button class="btn btn-secondary" data-action="startLevel" data-level="' + (idx - 1) + '">← Back</button>' +
+        '</div>'
+      );
+      return;
+    }
+    var desc = lvl.type === 'multiple-choice' ? 'Pick the right word!' :
+               lvl.type === 'scramble' ? 'Spell the word!' : 'Mixed challenge!';
+    render(
+      '<div class="screen active level-intro">' +
+        '<div class="level-badge">Level ' + lvl.id + '</div>' +
+        '<div class="theme-icons">' + lvl.emoji + '</div>' +
+        '<h2>' + lvl.name + '</h2>' +
+        '<p class="info">' + desc + '<br>' + lvl.words.length + ' words to master</p>' +
+        '<button class="btn btn-play" style="animation:none" data-action="beginQuiz" data-level="' + idx + '">▶ Play</button>' +
+        '<button class="btn btn-secondary btn-small" data-action="home">← Home</button>' +
+      '</div>'
+    );
+  }
+
+  function startLevel(idx) {
+    currentLevel = idx; updateDots(); showLevelIntro(idx);
+  }
+
+  // ==================== QUIZ ====================
+  function beginQuiz(idx) {
+    currentLevel = idx; currentQuestion = 0; score = 0; answered = false;
+    if (LEVELS[idx].type === 'mixed') {
+      var pool = [];
+      LEVELS[0].words.forEach(function(w) { pool.push({ word: w.word, emoji: w.emoji, review: true }); });
+      LEVELS[1].words.forEach(function(w) { pool.push({ word: w.word, emoji: w.emoji, review: true }); });
+      reviewQuestions = shuffle(pool).slice(0, 3);
+    }
+    showQuestion();
+    // Auto-speak first word — user just clicked Play, speech is allowed
+    var first = getCurrentWord();
+    if (first) say(first.word);
+  }
+
+  function showQuestion() {
+    var lvl = LEVELS[currentLevel];
+    var q, totalQ;
+
+    if (lvl.type === 'mixed' && currentQuestion >= 3) {
+      q = reviewQuestions[currentQuestion - 3];
+      totalQ = 6;
+    } else {
+      q = lvl.words[currentQuestion];
+      totalQ = lvl.type === 'mixed' ? 6 : lvl.words.length;
+    }
+    if (!q) { finishLevel(); return; }
+
+    answered = false; builtWord = ''; usedLetterIndices.clear();
+
+    var isMC = (lvl.type === 'multiple-choice' || (lvl.type === 'mixed' && currentQuestion < 3) || q.review);
+    var badge = q.review ? '<span class="review-badge">🔄 Review</span>' : '';
+
+    var h = '';
+    h += '<div class="screen active quiz-area">';
+    h += '<div class="question-header">';
+    h += '<span class="q-counter">Level ' + lvl.id + ' · Question ' + (currentQuestion + 1) + ' of ' + totalQ + '</span>';
+    h += '<span class="q-emoji">' + q.emoji + '</span>';
+    h += '<button class="speaker-btn" id="speakerBtn" data-action="speak" data-word="' + q.word + '" title="Click to hear the word">🔊 Tap to Hear</button>';
+    h += badge;
+    h += '</div>';
+
+    if (isMC) {
+      var dis = q.distractors || [];
+      if (dis.length < 2) {
+        var aw = [];
+        LEVELS.forEach(function(lv) { lv.words.forEach(function(w) { aw.push(w.word); }); });
+        dis = shuffle(aw.filter(function(w) { return w !== q.word; })).slice(0, 2);
+      }
+      var opts = shuffle([q.word].concat(dis.slice(0, 2)));
+      h += '<div class="options-grid">';
+      opts.forEach(function(w) {
+        h += '<button class="option-btn" data-action="answerMC" data-word="' + w + '" data-correct="' + q.word + '">' + w + '</button>';
+      });
+      h += '</div>';
+    } else if (lvl.type === 'scramble' && !q.review) {
+      var letters = shuffle(q.word.split(''));
+      h += '<div class="scramble-area">';
+      h += '<div class="answer-slot" id="answerSlot">';
+      q.word.split('').forEach(function() { h += '<div class="letter"></div>'; });
+      h += '</div>';
+      h += '<div class="letter-options" id="letterOptions">';
+      letters.forEach(function(l, i) {
+        h += '<div class="letter-chip" data-action="pickLetter" data-letter="' + l + '" data-index="' + i + '" data-target="' + q.word + '">' + l.toUpperCase() + '</div>';
+      });
+      h += '</div>';
+      h += '<button class="btn-reset" data-action="resetScramble" data-target="' + q.word + '">↺ Reset</button>';
+      h += '</div>';
+    }
+    h += '<div class="feedback-inline" id="feedbackArea"></div>';
+    h += '</div>';
+    render(h);
+  }
+
+  // ==================== ANSWERS ====================
+  function answerMC(chosen, correct, btn) {
+    answered = true;
+    var btns = document.querySelectorAll('.option-btn');
+    btns.forEach(function(b) { b.classList.add('disabled'); });
+    var fb = document.getElementById('feedbackArea');
+
+    if (chosen === correct) {
+      btn.classList.add('correct');
+      score++; totalCoins++;
+      if (fb) { fb.className = 'feedback-inline good'; fb.innerHTML = '✓ Great! <button class="btn-next" data-action="advance">Next →</button>'; }
+      ding();
+      say(correct);
+    } else {
+      btn.classList.add('wrong');
+      btns.forEach(function(b) { if (b.getAttribute('data-word') === correct) b.classList.add('correct'); });
+      if (fb) { fb.className = 'feedback-inline ops'; fb.innerHTML = '✗ The word is: ' + correct + ' <button class="btn-next" data-action="advance">Next →</button>'; }
+      buzz();
+      say(correct);
+    }
+  }
+
+  function pickLetter(letter, idx, targetWord) {
+    if (usedLetterIndices.has(idx)) return;
+    builtWord += letter;
+    usedLetterIndices.add(idx);
+    var slots = document.querySelectorAll('#answerSlot .letter');
+    for (var i = 0; i < builtWord.length && i < slots.length; i++) {
+      slots[i].textContent = builtWord[i].toUpperCase();
+      slots[i].classList.add('filled');
+    }
+    var chips = document.querySelectorAll('.letter-chip');
+    chips[idx].classList.add('used');
+
+    if (builtWord.length === targetWord.length) {
+      answered = true;
+      var fb = document.getElementById('feedbackArea');
+      var ok = builtWord === targetWord;
+      if (ok) {
+        score++; totalCoins++;
+        slots.forEach(function(s) { s.classList.add('correct-slot'); });
+        if (fb) { fb.className = 'feedback-inline good'; fb.innerHTML = '✓ Spelled! <button class="btn-next" data-action="advance">Next →</button>'; }
+        ding();
+        say(targetWord);
+      } else {
+        if (fb) { fb.className = 'feedback-inline ops'; fb.innerHTML = '✗ Not quite! The word is: ' + targetWord + ' <button class="btn-next" data-action="advance">Next →</button>'; }
+        chips.forEach(function(c) { c.classList.add('chip-disabled'); });
+        buzz();
+        say(targetWord);
+      }
+    }
+  }
+
+  function resetScramble(w) {
+    builtWord = ''; usedLetterIndices.clear();
+    var slots = document.querySelectorAll('#answerSlot .letter');
+    slots.forEach(function(s) { s.textContent = ''; s.classList.remove('filled', 'correct-slot'); });
+    var chips = document.querySelectorAll('.letter-chip');
+    chips.forEach(function(c) { c.classList.remove('used'); });
+  }
+
+  // Advance to next question (triggered by "Next →" button)
+  function advanceQuestion() {
+    clickSnd();
+    currentQuestion++;
+    var lvl = LEVELS[currentLevel];
+    var totalQ = lvl.type === 'mixed' ? 6 : lvl.words.length;
+    if (currentQuestion < totalQ) {
+      showQuestion();
+      // Auto-speak: user just clicked "Next →", speech is allowed
+      var cw = getCurrentWord();
+      if (cw) say(cw.word);
+    } else {
+      finishLevel();
+    }
+  }
+
+  // ==================== LEVEL COMPLETE ====================
+  function finishLevel() {
+    var lvl = LEVELS[currentLevel];
+    var totalQ = lvl.type === 'mixed' ? 6 : lvl.words.length;
+    var pct = score / totalQ;
+    var stars = pct >= 1 ? 3 : pct >= 0.75 ? 2 : pct >= 0.5 ? 1 : 0;
+    levelScores[currentLevel] = score;
+    levelStars[currentLevel] = stars;
+    updateDots();
+
+    if (stars >= 1) levelUpFanfare();
+
+    var starHtml = '';
+    for (var i = 1; i <= 3; i++) starHtml += '<span class="star">' + (i <= stars ? '⭐' : '☆') + '</span>';
+    var msg = stars >= 2 ? 'Great Job!' : stars >= 1 ? 'Good Try!' : 'Keep Going!';
+    var allDone = currentLevel >= 2;
+
+    render(
+      '<div class="screen active level-complete">' +
+        '<div class="stars-display">' + starHtml + '</div>' +
+        '<h2>' + msg + '</h2>' +
+        '<p class="score-text">Score: ' + score + ' / ' + totalQ + '</p>' +
+        (allDone
+          ? '<button class="btn btn-play" data-action="victory">🏆 See Results</button>'
+          : '<button class="btn btn-play" data-action="nextLevel" data-level="' + (currentLevel + 1) + '">▶ Next Level</button>') +
+        '<button class="btn btn-secondary btn-small" data-action="home">← Home</button>' +
+      '</div>'
+    );
+  }
+
+  // ==================== VICTORY & RESET ====================
+  function showVictory() {
+    victoryFanfare();
+    var s = levelStars.reduce(function(a, b) { return a + b; }, 0);
+    render(
+      '<div class="screen active victory-screen">' +
+        '<div class="trophy">🏆</div>' +
+        '<h2>Jungle Complete!</h2>' +
+        '<div class="final-stats">' +
+          '<div class="stat-card"><div class="stat-value">' + s + '/9</div><div class="stat-label">Stars</div></div>' +
+          '<div class="stat-card"><div class="stat-value">' + totalCoins + '</div><div class="stat-label">Coins</div></div>' +
+          '<div class="stat-card"><div class="stat-value">10</div><div class="stat-label">Words</div></div>' +
+        '</div>' +
+        '<p class="info">You\'re a word explorer! 🌟<br>All vocabulary collected across 3 levels.</p>' +
+        '<button class="btn btn-play" data-action="resetGame">🔄 Play Again</button>' +
+        '<button class="btn btn-secondary btn-small" data-action="home">← Home</button>' +
+      '</div>'
+    );
+  }
+
+  function resetGame() {
+    currentLevel = 0; currentQuestion = 0; score = 0;
+    levelScores = [0, 0, 0]; levelStars = [0, 0, 0];
+    totalCoins = 0; answered = false;
+    updateDots(); showStartScreen();
+  }
+
+  // ==================== INIT ====================
+  updateDots(); showStartScreen();
+})();
+</script>
+</body>
+</html>

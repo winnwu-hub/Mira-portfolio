@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeakNow · AI 英语对话教练</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #2563eb; --primary-light: #dbeafe; --primary-dark: #1d4ed8;
+  --ai-bubble: #f1f5f9; --user-bubble: #2563eb;
+  --ai-text: #1e293b; --user-text: #ffffff;
+  --bg: #f8fafc; --card: #ffffff; --text: #334155; --text-light: #94a3b8;
+  --success: #16a34a; --warn: #ea580c; --error: #dc2626;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --radius: 18px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f172a; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+}
+
+.app {
+  width: 100%; max-width: 480px; height: 100vh; max-height: 780px;
+  background: var(--bg); display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+@media (min-width: 481px) { .app { border-radius: 20px; margin: 16px; } }
+@media (max-width: 480px) { .app { max-width: 100%; max-height: 100vh; border-radius: 0; } }
+
+/* ========== TOP BAR ========== */
+.top-bar {
+  background: var(--card); padding: 14px 18px; display: flex;
+  align-items: center; gap: 12px; flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0; z-index: 10;
+}
+.btn-back {
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: #f1f5f9; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease; flex-shrink: 0;
+}
+.btn-back:hover { background: #e2e8f0; }
+.btn-back:active { transform: scale(0.93); }
+.top-info { flex: 1; min-width: 0; }
+.top-info .scene-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.top-info .scene-progress { font-size: 0.72rem; color: var(--text-light); }
+
+/* ========== MAIN AREA ========== */
+.main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* ========== HOME SCREEN ========== */
+.home-screen { padding: 24px 18px; gap: 18px; }
+.home-header { text-align: center; margin-bottom: 8px; }
+.home-header .logo { font-size: 3rem; display: block; margin-bottom: 8px; }
+.home-header h1 { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+.home-header p { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+
+.scene-card {
+  background: var(--card); border-radius: 16px; padding: 18px 20px;
+  cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center;
+  gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 2px solid transparent;
+}
+.scene-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--primary-light); }
+.scene-card:active { transform: scale(0.98); }
+.scene-card.completed { border-color: #bbf7d0; background: #f9fef9; }
+.scene-card .sc-icon { font-size: 2.2rem; flex-shrink: 0; }
+.scene-card .sc-info { flex: 1; min-width: 0; }
+.scene-card .sc-info h3 { font-size: 0.9rem; font-weight: 700; color: #0f172a; }
+.scene-card .sc-info .sc-desc { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+.scene-card .sc-score { font-size: 0.8rem; font-weight: 700; color: var(--success); flex-shrink: 0; }
+.scene-card .sc-new { font-size: 0.65rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 50px; font-weight: 700; flex-shrink: 0; }
+
+/* ========== CHAT SCREEN ========== */
+.chat-area { flex: 1; overflow-y: auto; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 12px; }
+
+.msg-row { display: flex; gap: 8px; animation: msgIn 0.35s ease; max-width: 90%; }
+.msg-row.ai { align-self: flex-start; }
+.msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+@keyframes msgIn {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; align-self: flex-end;
+}
+.msg-avatar.ai-avatar { background: #e2e8f0; }
+.msg-avatar.user-avatar { background: var(--primary); color: white; font-size: 0.8rem; }
+
+.msg-bubble {
+  padding: 10px 15px; border-radius: var(--radius); font-size: 0.9rem;
+  line-height: 1.5; position: relative; word-break: break-word;
+}
+.msg-bubble.ai-bubble { background: var(--ai-bubble); color: var(--ai-text); border-bottom-left-radius: 4px; }
+.msg-bubble.user-bubble { background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; }
+
+.msg-bubble .msg-recast {
+  display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.08);
+  font-size: 0.75rem; color: var(--text-light); font-style: italic;
+}
+.msg-bubble .msg-recast span { color: var(--primary); font-style: normal; font-weight: 600; }
+
+/* Typing indicator */
+.typing-indicator { display: flex; gap: 5px; padding: 10px 15px; }
+.typing-indicator .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1;
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-indicator .dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator .dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ========== INPUT AREA ========== */
+.input-area {
+  padding: 10px 14px 14px; background: var(--card); flex-shrink: 0;
+  border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px;
+}
+.quick-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.quick-opt {
+  background: #f1f5f9; border: 2px solid #e2e8f0; border-radius: 20px;
+  padding: 9px 16px; font-size: 0.85rem; cursor: pointer; font-weight: 600;
+  color: var(--text); transition: all 0.15s ease; white-space: nowrap;
+  font-family: inherit; outline: none;
+}
+.quick-opt:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); }
+.quick-opt:active { transform: scale(0.95); }
+.quick-opt.best-choice { border-color: #bbf7d0; background: #f0fdf4; }
+.quick-opt.best-choice::after { content: ' 👍'; font-size: 0.7rem; }
+
+.free-input-row { display: flex; gap: 8px; align-items: center; }
+.free-input-row input {
+  flex: 1; border: 2px solid #e2e8f0; border-radius: 24px;
+  padding: 10px 16px; font-size: 0.9rem; font-family: inherit;
+  outline: none; transition: border-color 0.2s ease; color: var(--text);
+}
+.free-input-row input:focus { border-color: var(--primary); }
+.free-input-row input::placeholder { color: #cbd5e1; }
+.btn-send {
+  width: 42px; height: 42px; border-radius: 50%; border: none;
+  background: var(--primary); color: white; font-size: 1.1rem;
+  cursor: pointer; transition: all 0.15s ease; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-send:hover { background: var(--primary-dark); transform: scale(1.05); }
+.btn-send:active { transform: scale(0.93); }
+.btn-send:disabled { opacity: 0.4; pointer-events: none; }
+
+.btn-voice {
+  width: 42px; height: 42px; border-radius: 50%; border: 2px solid #e2e8f0;
+  background: white; font-size: 1.1rem; cursor: pointer;
+  transition: all 0.15s ease; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-voice:hover { background: #f8fafc; border-color: #cbd5e1; }
+.btn-voice.listening {
+  background: #fef2f2; border-color: var(--error); color: var(--error);
+  animation: voicePulse 1.2s ease-in-out infinite;
+}
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(220,38,38,0); }
+}
+.btn-voice:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ========== RESULTS SCREEN ========== */
+.results-screen { padding: 24px 20px; align-items: center; text-align: center; gap: 16px; overflow-y: auto; }
+.results-screen .result-icon { font-size: 3.5rem; }
+.results-screen h2 { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+.results-screen .result-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.score-card {
+  background: var(--card); border-radius: 14px; padding: 14px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.score-card .sc-value { font-size: 1.8rem; font-weight: 800; }
+.score-card .sc-label { font-size: 0.7rem; color: var(--text-light); margin-top: 2px; }
+.score-card .sc-stars { font-size: 1rem; margin-top: 4px; }
+.results-screen .result-tip {
+  background: #fef9c3; border-radius: 12px; padding: 12px 16px;
+  font-size: 0.8rem; color: #854d0e; text-align: left; width: 100%;
+}
+.results-screen .result-vocab {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+}
+.results-screen .result-vocab .v-tag {
+  background: var(--primary-light); color: var(--primary-dark);
+  padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600;
+}
+.btn {
+  border: none; cursor: pointer; font-family: inherit; font-weight: 700;
+  font-size: 0.9rem; padding: 12px 28px; border-radius: 50px;
+  transition: all 0.2s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.95); }
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover { background: var(--primary-light); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* ========== SCENE INTRO OVERLAY ========== */
+.scene-intro {
+  padding: 28px 22px; text-align: center; align-items: center;
+  justify-content: center; gap: 16px;
+}
+.scene-intro .intro-icon { font-size: 3.5rem; }
+.scene-intro h2 { font-size: 1.3rem; font-weight: 800; color: #0f172a; }
+.scene-intro .intro-vocab { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.scene-intro .intro-vocab .v-tag {
+  background: #f1f5f9; padding: 6px 12px; border-radius: 20px;
+  font-size: 0.8rem; font-weight: 600; color: var(--text);
+}
+.scene-intro .intro-tip { font-size: 0.8rem; color: var(--text-light); }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 400px) {
+  .msg-row { max-width: 95%; }
+  .quick-opt { font-size: 0.78rem; padding: 7px 12px; }
+  .result-scores { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="top-bar" id="topBar">
+    <button class="btn-back" id="btnBack" style="display:none" data-action="goHome">←</button>
+    <div class="top-info">
+      <div class="scene-title" id="sceneTitle">SpeakNow</div>
+      <div class="scene-progress" id="sceneProgress"></div>
+    </div>
+  </div>
+
+  <div class="main-area" id="mainArea"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== AUDIO ====================
+  var _actx = null;
+  function ctx() {
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === 'suspended') _actx.resume();
+    return _actx;
+  }
+  function tone(freq, dur, vol, delay) {
+    try {
+      var c = ctx();
+      var t = c.currentTime + (delay || 0);
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    } catch(e) {}
+  }
+  function msgSent() { tone(880, 0.08, 0.12); }
+  function msgRecv() { tone(660, 0.06, 0.10); }
+  function resultFanfare() {
+    [523, 659, 784, 1047].forEach(function(f, i) { tone(f, 0.15, 0.2, i * 0.08); });
+  }
+
+  // Speech synthesis for AI messages
+  var _voices = [];
+  var _voicesReady = false;
+  var _speechWarmedUp = false;
+
+  if (window.speechSynthesis) {
+    _voices = window.speechSynthesis.getVoices();
+    if (_voices.length > 0) _voicesReady = true;
+    window.speechSynthesis.onvoiceschanged = function() {
+      _voices = window.speechSynthesis.getVoices();
+      if (_voices.length > 0) _voicesReady = true;
+    };
+  }
+
+  function warmUpSpeech() {
+    if (_speechWarmedUp || !window.speechSynthesis) return;
+    _speechWarmedUp = true;
+    try {
+      var s = window.speechSynthesis;
+      _voices = s.getVoices();
+      if (_voices.length > 0) _voicesReady = true;
+      var u = new SpeechSynthesisUtterance('');
+      u.volume = 0; s.speak(u);
+    } catch(e) {}
+  }
+
+  function say(text) {
+    if (!window.speechSynthesis) return;
+    var s = window.speechSynthesis;
+    if (s.paused) s.resume();
+    if (!_voicesReady) { _voices = s.getVoices(); if (_voices.length > 0) _voicesReady = true; }
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.0;
+    if (_voices.length > 0) {
+      for (var i = 0; i < _voices.length; i++) {
+        if (_voices[i].lang === 'en-US' && _voices[i].name.indexOf('Google') >= 0) { u.voice = _voices[i]; break; }
+      }
+      if (!u.voice) {
+        for (var j = 0; j < _voices.length; j++) {
+          if (_voices[j].lang.indexOf('en') === 0) { u.voice = _voices[j]; break; }
+        }
+      }
+    }
+    if (s.speaking) s.cancel();
+    s.speak(u);
+  }
+
+  // ==================== SPEECH RECOGNITION ====================
+  var _recognition = null;
+  var _isListening = false;
+  var _finalTranscript = '';  // Accumulated final results
+  var _lastInterim = '';      // Track last interim to avoid duplicate updates
+  var _autoSendTimer = null;  // Timer to auto-send after speech silence
+  var _hasSpoken = false;     // Track if user has spoken this session
+
+  function clearAutoSendTimer() {
+    if (_autoSendTimer) { clearTimeout(_autoSendTimer); _autoSendTimer = null; }
+  }
+
+  function scheduleAutoSend() {
+    clearAutoSendTimer();
+    _autoSendTimer = setTimeout(function() {
+      if (_isListening && _finalTranscript.trim()) {
+        stopListening();
+        sendFreeInput();
+      }
+    }, 1500);
+  }
+
+  function initRecognition() {
+    if (_recognition) return true;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return false;
+    var rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;   // One utterance at a time
+    rec.maxAlternatives = 1;
+
+    rec.onresult = function(event) {
+      var interim = '';
+      for (var i = 0; i < event.results.length; i++) {
+        var result = event.results[i];
+        var alt = (result[0] && result[0].transcript != null)
+          ? result[0] : (result.item ? result.item(0) : null);
+        var text = alt ? alt.transcript : '';
+        if (!text) continue;
+        if (result.isFinal) {
+          _finalTranscript += text + ' ';
+          _hasSpoken = true;
+        } else {
+          interim += text;
+        }
+      }
+      var combined = (_finalTranscript + interim).replace(/\s+/g, ' ').trim();
+      if (combined === _lastInterim) return;
+      _lastInterim = combined;
+      var input = document.getElementById('freeInput');
+      if (input) {
+        input.value = combined;
+        input.setSelectionRange(combined.length, combined.length);
+      }
+      // Data-driven timer: reset on every new speech result
+      if (_isListening && combined) scheduleAutoSend();
+    };
+
+    // onspeechstart / onspeechend: visual feedback ONLY.
+    // We do NOT cancel/set the auto-send timer here because Edge fires
+    // onspeechstart spuriously after rec.start(), which kills the timer.
+    rec.onspeechstart = function() {
+      var input = document.getElementById('freeInput');
+      if (input) input.style.borderColor = '#16a34a';
+    };
+
+    rec.onspeechend = function() {
+      var input = document.getElementById('freeInput');
+      if (input) input.style.borderColor = '';
+      // Backup: also schedule when speech ends
+      if (_finalTranscript.trim() && _isListening) scheduleAutoSend();
+    };
+
+    rec.onerror = function(event) {
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      stopListening();
+    };
+
+    rec.onend = function() {
+      if (!_isListening) { updateVoiceButton(); return; }
+      // Only auto-restart if user hasn't spoken yet — keep mic open while waiting.
+      // Once user HAS spoken, DON'T restart — the scheduleAutoSend() timer
+      // will fire and send the message. This prevents browser differences
+      // (Edge fires onspeechstart after rec.start()) from breaking the flow.
+      if (!_hasSpoken) {
+        try { rec.start(); } catch(e) {
+          setTimeout(function() {
+            if (_isListening && !_hasSpoken) {
+              try { rec.start(); } catch(e2) { _isListening = false; updateVoiceButton(); }
+            }
+          }, 200);
+        }
+      }
+    };
+
+    _recognition = rec;
+    return true;
+  }
+
+  function toggleVoice() {
+    if (_isListening) { stopListening(); }
+    else { startListening(); }
+  }
+
+  function startListening() {
+    warmUpSpeech();
+    if (!initRecognition()) {
+      var btn = document.getElementById('btnVoice');
+      if (btn) { btn.style.opacity = '0.5'; setTimeout(function() { btn.style.opacity = ''; }, 300); }
+      return;
+    }
+    try {
+      _finalTranscript = '';
+      _lastInterim = '';
+      _hasSpoken = false;
+      clearAutoSendTimer();
+      _recognition.start();
+      _isListening = true;
+      updateVoiceButton();
+      var input = document.getElementById('freeInput');
+      if (input) { input.value = ''; input.placeholder = '🎙️ Listening... speak now!'; input.focus(); }
+    } catch(e) { _isListening = false; }
+  }
+
+  function stopListening() {
+    _isListening = false;
+    clearAutoSendTimer();
+    if (_recognition) { try { _recognition.abort(); } catch(e) {} }
+    updateVoiceButton();
+    var input = document.getElementById('freeInput');
+    if (input) { input.placeholder = 'Or type your own reply...'; input.style.borderColor = ''; }
+  }
+
+  function updateVoiceButton() {
+    var btn = document.getElementById('btnVoice');
+    if (!btn) return;
+    if (_isListening) {
+      btn.classList.add('listening'); btn.textContent = '🔴';
+      btn.title = '🔴 Recording... click to stop';
+    } else {
+      btn.classList.remove('listening'); btn.textContent = '🎤';
+      btn.title = '🎤 Voice input — click to speak';
+    }
+  }
+
+  // ==================== STATE ====================
+  var currentScene = null;
+  var exchangeIdx = 0;
+  var sceneScores = {};
+  var isTyping = false;
+
+  // ==================== DOM ====================
+  var mainArea = document.getElementById('mainArea');
+  var btnBack = document.getElementById('btnBack');
+  var sceneTitle = document.getElementById('sceneTitle');
+  var sceneProgress = document.getElementById('sceneProgress');
+
+  function render(html) { mainArea.innerHTML = html; }
+
+  // ==================== SCENE DATA ====================
+  var SCENES = {
+    cafe: {
+      id: 'cafe', title: '☕ At the Café', icon: '☕',
+      desc: 'Order drinks at a coffee shop',
+      vocab: ['coffee', 'tea', 'hot chocolate', 'small', 'medium', 'large', 'iced', 'hot', 'sugar', 'milk', 'menu', 'how much'],
+      exchanges: [
+        { ai: "Good morning! Welcome to Coffee Corner. ☕ What would you like to drink?",
+          options: [{ text: "I'd like a coffee, please.", quality: 'best' },{ text: "Coffee, please.", quality: 'good' }],
+          freeHint: 'Try: "I\'d like a ___" or "Can I have ___?"' },
+        { ai: { best: "Great choice! ☕ Would you like hot coffee or iced coffee?", good: "Sure! A coffee — would you like it hot or iced?", free: "Nice! ☕ Would you like hot coffee or iced coffee?" },
+          options: [{ text: "Hot coffee, please.", quality: 'best' },{ text: "Hot, please.", quality: 'good' }],
+          freeHint: 'Try: "Hot coffee, please."' },
+        { ai: { best: "Perfect! ☕ What size would you like?", good: "Got it. What size — small, medium, or large?", free: "Sure thing. What size — small, medium, or large?" },
+          options: [{ text: "Medium, please.", quality: 'best' },{ text: "A medium one.", quality: 'good' }],
+          freeHint: 'Try: "Medium, please."' },
+        { ai: { best: "A medium hot coffee. ☕ Would you like anything else?", good: "Okay, a medium. Would you like anything else — maybe a snack?", free: "Got it. Anything else?" },
+          options: [{ text: "No, that's all. Thank you!", quality: 'best' },{ text: "No, thanks.", quality: 'good' }],
+          freeHint: 'Try: "No, that\'s all. Thank you!"' },
+        { ai: { best: "That'll be $3.50, please. 💳", good: "That comes to $3.50. 💳", free: "Alright, that'll be $3.50." },
+          options: [{ text: "Here you are.", quality: 'best' },{ text: "Here.", quality: 'good' }],
+          freeHint: 'Try: "Here you are."' },
+        { ai: { best: "Thank you! Here's your medium hot coffee. Have a great day! ☕😊", good: "Thanks! Here's your coffee. Enjoy! ☕", free: "Thanks! Here you go. Enjoy! ☕" },
+          options: [], isFinal: true }
+      ]
+    },
+    directions: {
+      id: 'directions', title: '🗺️ Asking Directions', icon: '🗺️',
+      desc: 'Find your way around a new city',
+      vocab: ['straight', 'turn left', 'turn right', 'next to', 'between', 'near', 'far', 'subway station', 'block', 'on the left', 'on the right'],
+      exchanges: [
+        { ai: "Excuse me, can I help you find something? 🗺️",
+          options: [{ text: "Yes, where is the subway station?", quality: 'best' },{ text: "Where is the subway?", quality: 'good' }],
+          freeHint: 'Try: "Excuse me, where is the ___?"' },
+        { ai: { best: "The subway station? It's pretty close! Go straight for two blocks. 🚶", good: "Oh, the subway! Go straight for about two blocks.", free: "The subway station? Go straight for two blocks." },
+          options: [{ text: "Two blocks straight. Got it!", quality: 'best' },{ text: "Okay, straight.", quality: 'good' }],
+          freeHint: 'Try: "Got it, thank you!"' },
+        { ai: { best: "Yes! Then turn left at the bank. The subway is next to the bank. 🏦", good: "Right. Then turn left — you'll see a bank. The station is right next to it.", free: "Then turn left at the bank. The station is next to it." },
+          options: [{ text: "Next to the bank, on the left?", quality: 'best' },{ text: "Left, next to bank?", quality: 'good' }],
+          freeHint: 'Try confirming: "Next to the bank?"' },
+        { ai: { best: "Exactly! You can't miss it. 🚇", good: "That's right! You'll see the entrance.", free: "Yes, that's it." },
+          options: [{ text: "How far is it from here?", quality: 'best' },{ text: "Is it far?", quality: 'good' }],
+          freeHint: 'Try: "How far is it?"' },
+        { ai: { best: "It's very near — maybe a 5-minute walk. 🚶‍♂️", good: "Not far at all. About 5 minutes on foot.", free: "Not far — about 5 minutes." },
+          options: [{ text: "Thank you so much for your help!", quality: 'best' },{ text: "Thanks!", quality: 'good' }],
+          freeHint: 'Try: "Thank you for your help!"' },
+        { ai: { best: "You're welcome! Enjoy your trip! 🗺️😊", good: "No problem at all. Have a good day!", free: "You're welcome!" },
+          options: [], isFinal: true }
+      ]
+    },
+    hotel: {
+      id: 'hotel', title: '🏨 Hotel Check-in', icon: '🏨',
+      desc: 'Check into a hotel and ask about facilities',
+      vocab: ['reservation', 'passport', 'check in', 'room key', 'floor', 'elevator', 'breakfast', 'checkout', 'Wi-Fi', 'password'],
+      exchanges: [
+        { ai: "Good evening! Welcome to City Hotel. How can I help you? 🏨",
+          options: [{ text: "Hello, I have a reservation.", quality: 'best' },{ text: "I want to check in.", quality: 'good' }],
+          freeHint: 'Try: "I have a reservation."' },
+        { ai: { best: "Of course! What name is the reservation under?", good: "Sure! Can I get your name, please?", free: "Certainly. What's the name?" },
+          options: [{ text: "It's under Li. L-I.", quality: 'best' },{ text: "Li. L-I.", quality: 'good' }],
+          freeHint: 'Try: "It\'s under [your name]."' },
+        { ai: { best: "I found it! Mr. Li, two nights. May I see your passport, please? 📋", good: "Let me check... Yes, Mr. Li. Could I see your passport?", free: "Found it. May I see your passport?" },
+          options: [{ text: "Yes, here is my passport.", quality: 'best' },{ text: "Here you are.", quality: 'good' }],
+          freeHint: 'Try: "Here is my passport."' },
+        { ai: { best: "Thank you! Your room is 508 on the fifth floor. Here's your key card. 🗝️", good: "Thanks! Room 508, fifth floor. Here's your key.", free: "Thanks. Room 508, fifth floor." },
+          options: [{ text: "Thank you. What time is breakfast?", quality: 'best' },{ text: "When is breakfast?", quality: 'good' }],
+          freeHint: 'Try: "What time is breakfast?"' },
+        { ai: { best: "Breakfast is from 7 to 10 a.m. on the second floor. 🍳", good: "7 to 10 in the morning, on the second floor.", free: "7 to 10 a.m., second floor." },
+          options: [{ text: "Great! And what's the Wi-Fi password?", quality: 'best' },{ text: "What's the Wi-Fi?", quality: 'good' }],
+          freeHint: 'Try: "What\'s the Wi-Fi password?"' },
+        { ai: { best: "The Wi-Fi password is 'cityhotel2024'. Checkout is at 11 a.m. Enjoy your stay! 🌟", good: "It's 'cityhotel2024'. Checkout is at 11. Have a nice stay!", free: "Wi-Fi: 'cityhotel2024'. Checkout at 11." },
+          options: [], isFinal: true }
+      ]
+    }
+  };
+
+  // ==================== SCORING ====================
+  var exchangeScores = [];
+  function resetExchangeScores() { exchangeScores = []; }
+  function addExchangeScore(quality) {
+    var s = quality === 'best' ? { task: 1, accuracy: 1, fluency: 1 } :
+            quality === 'good' ? { task: 0.9, accuracy: 0.85, fluency: 0.85 } :
+                                 { task: 0.7, accuracy: 0.7, fluency: 0.7 };
+    exchangeScores.push(s);
+  }
+  function computeFinalScores() {
+    if (exchangeScores.length === 0) return { task: 50, accuracy: 50, fluency: 50 };
+    var sum = { task: 0, accuracy: 0, fluency: 0 };
+    exchangeScores.forEach(function(s) { sum.task += s.task; sum.accuracy += s.accuracy; sum.fluency += s.fluency; });
+    var n = exchangeScores.length;
+    return { task: Math.round(sum.task / n * 100), accuracy: Math.round(sum.accuracy / n * 100), fluency: Math.round(sum.fluency / n * 100) };
+  }
+  function getStars(pct) { return pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0; }
+
+  // ==================== RENDER: HOME ====================
+  function showHome() {
+    currentScene = null; exchangeIdx = 0;
+    btnBack.style.display = 'none';
+    sceneTitle.textContent = 'SpeakNow';
+    sceneProgress.textContent = 'AI English Conversation Coach';
+    var cards = '';
+    Object.keys(SCENES).forEach(function(key) {
+      var sc = SCENES[key]; var saved = sceneScores[key];
+      var cls = saved ? ' completed' : '';
+      var rightHtml = saved ? '<span class="sc-score">' + '⭐'.repeat(getStars(Math.round((saved.task + saved.accuracy + saved.fluency) / 3))) + '</span>' : '<span class="sc-new">NEW</span>';
+      cards += '<div class="scene-card' + cls + '" data-action="startScene" data-scene="' + key + '"><span class="sc-icon">' + sc.icon + '</span><div class="sc-info"><h3>' + sc.title + '</h3><span class="sc-desc">' + sc.desc + '</span></div>' + rightHtml + '</div>';
+    });
+    render('<div class="screen active home-screen"><div class="home-header"><span class="logo">🤖</span><h1>SpeakNow</h1><p>AI 英语对话教练 · Practice real conversations</p></div>' + cards + '<p style="text-align:center;font-size:0.7rem;color:var(--text-light);margin-top:8px">Choose a scenario to start a conversation with AI 🤖</p></div>');
+  }
+
+  // ==================== RENDER: SCENE INTRO ====================
+  function showSceneIntro(sceneKey) {
+    var sc = SCENES[sceneKey];
+    currentScene = sceneKey; exchangeIdx = 0; resetExchangeScores();
+    btnBack.style.display = '';
+    sceneTitle.textContent = sc.title; sceneProgress.textContent = 'Starting...';
+    var tags = sc.vocab.map(function(v) { return '<span class="v-tag">' + v + '</span>'; }).join('');
+    render('<div class="screen active scene-intro"><div class="intro-icon">' + sc.icon + '</div><h2>' + sc.title + '</h2><p style="font-size:0.85rem;color:var(--text-light)">' + sc.desc + '</p><p style="font-size:0.75rem;color:var(--text-light);margin-top:-8px">核心词汇 · Key Vocabulary</p><div class="intro-vocab">' + tags + '</div><p class="intro-tip">💡 The AI will ask questions — click or type your replies!</p><button class="btn btn-primary" data-action="beginChat" style="margin-top:8px">▶ Start Conversation</button></div>');
+  }
+
+  // ==================== RENDER: CHAT ====================
+  function beginChat() {
+    var sc = SCENES[currentScene];
+    exchangeIdx = 0; resetExchangeScores();
+    sceneProgress.textContent = 'In conversation...';
+    var h = '<div class="screen active"><div class="chat-area" id="chatArea">';
+    h += buildAIBubble(sc.exchanges[0].ai);
+    h += '</div>' + buildInputArea(sc.exchanges[0]) + '</div>';
+    render(h); scrollToBottom(); msgRecv();
+  }
+
+  function stripEmoji(text) { return text.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+  function buildAIBubble(text) {
+    var cleanText = stripEmoji(text);
+    return '<div class="msg-row ai"><div class="msg-avatar ai-avatar">🤖</div><div class="msg-bubble ai-bubble" data-speak="' + escapeHTML(cleanText).replace(/"/g, '&quot;') + '">' + escapeHTML(text) + '<span style="display:block;margin-top:4px;font-size:0.65rem;color:var(--text-light)">🔊 Tap to listen</span></div></div>';
+  }
+
+  function buildUserBubble(text) {
+    return '<div class="msg-row user"><div class="msg-avatar user-avatar">You</div><div class="msg-bubble user-bubble">' + escapeHTML(text) + '</div></div>';
+  }
+
+  function buildRecastBubble(original, recast) {
+    return '<div class="msg-row ai"><div class="msg-avatar ai-avatar">🤖</div><div class="msg-bubble ai-bubble" data-speak="' + escapeHTML(recast).replace(/"/g, '&quot;') + '">' + escapeHTML(recast) + '<span class="msg-recast">💡 <span>"' + escapeHTML(original) + '"</span> → "' + escapeHTML(recast) + '"</span></div></div>';
+  }
+
+  function buildInputArea(exchange) {
+    var h = '<div class="input-area" id="inputArea">';
+    if (exchange.options && exchange.options.length > 0) {
+      h += '<div class="quick-options" id="quickOptions">';
+      exchange.options.forEach(function(opt, i) {
+        var cls = opt.quality === 'best' ? ' best-choice' : '';
+        h += '<button class="quick-opt' + cls + '" data-action="pickOption" data-idx="' + i + '">' + escapeHTML(opt.text) + '</button>';
+      });
+      h += '</div>';
+    }
+    if (!exchange.isFinal) {
+      h += '<div class="free-input-row"><button class="btn-voice" id="btnVoice" data-action="toggleVoice" title="🎤 Voice input — click to speak">🎤</button><input type="text" id="freeInput" placeholder="' + (exchange.freeHint || 'Or type your own reply...') + '" data-action="freeInput"><button class="btn-send" id="btnSend" data-action="sendFree">➤</button></div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function buildTypingIndicator() {
+    return '<div class="msg-row ai" id="typingIndicator"><div class="msg-avatar ai-avatar">🤖</div><div class="msg-bubble ai-bubble typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+  }
+
+  function escapeHTML(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  function scrollToBottom() {
+    var chat = document.getElementById('chatArea');
+    if (chat) { setTimeout(function() { chat.scrollTop = chat.scrollHeight; }, 100); }
+  }
+
+  // ==================== CHAT LOGIC ====================
+  function pickOption(idx) {
+    if (isTyping) return;
+    stopListening();
+    var sc = SCENES[currentScene];
+    var ex = sc.exchanges[exchangeIdx];
+    var chosen = ex.options[idx];
+    var quality = chosen.quality;
+    appendUserMessage(chosen.text);
+    addExchangeScore(quality);
+    msgSent();
+    var qo = document.getElementById('quickOptions');
+    if (qo) { qo.querySelectorAll('button').forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; }); }
+    var fi = document.getElementById('freeInput');
+    if (fi) fi.disabled = true;
+    isTyping = true; showTyping();
+    setTimeout(function() { removeTyping(); advanceConversation(quality); isTyping = false; }, 1000 + Math.random() * 800);
+  }
+
+  function sendFreeInput() {
+    if (isTyping) return;
+    var fi = document.getElementById('freeInput');
+    if (!fi) return;
+    var text = fi.value.trim();
+    if (!text) return;
+    clearAutoSendTimer();
+    // Stop listening if we were recording
+    if (_isListening) stopListening();
+    appendUserMessage(text);
+    addExchangeScore('free');
+    msgSent();
+    fi.disabled = true;
+    var qo = document.getElementById('quickOptions');
+    if (qo) { qo.querySelectorAll('button').forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; }); }
+    isTyping = true; showTyping();
+    setTimeout(function() { removeTyping(); advanceConversation('free'); isTyping = false; }, 1200 + Math.random() * 1000);
+  }
+
+  function showTyping() {
+    var chat = document.getElementById('chatArea');
+    if (!chat) return;
+    chat.insertAdjacentHTML('beforeend', buildTypingIndicator());
+    scrollToBottom();
+  }
+
+  function removeTyping() {
+    var ti = document.getElementById('typingIndicator');
+    if (ti) ti.remove();
+  }
+
+  function advanceConversation(quality) {
+    var sc = SCENES[currentScene];
+    var ex = sc.exchanges[exchangeIdx];
+    if (quality !== 'best' && ex.options && ex.options.length > 0) {
+      var bestOpt = ex.options.filter(function(o) { return o.quality === 'best'; })[0];
+      if (bestOpt) {
+        var chat = document.getElementById('chatArea');
+        chat.insertAdjacentHTML('beforeend', buildRecastBubble(
+          ex.options.filter(function(o) { return o.quality === quality; })[0].text, bestOpt.text));
+        scrollToBottom(); isTyping = true;
+        setTimeout(function() { removeLastRecast(); showNextExchange(quality); isTyping = false; }, 2000);
+        return;
+      }
+    }
+    showNextExchange(quality);
+  }
+
+  function removeLastRecast() {
+    var chat = document.getElementById('chatArea');
+    if (!chat) return;
+    var bubbles = chat.querySelectorAll('.msg-row.ai');
+    if (bubbles.length > 0) { var last = bubbles[bubbles.length - 1]; if (last.querySelector('.msg-recast')) last.remove(); }
+  }
+
+  function showNextExchange(quality) {
+    var sc = SCENES[currentScene];
+    exchangeIdx++;
+    if (exchangeIdx >= sc.exchanges.length) { showResults(); return; }
+    var nextEx = sc.exchanges[exchangeIdx];
+    var aiText = typeof nextEx.ai === 'string' ? nextEx.ai : (nextEx.ai[quality] || nextEx.ai.free || nextEx.ai.best);
+    var chat = document.getElementById('chatArea');
+    chat.insertAdjacentHTML('beforeend', buildAIBubble(aiText));
+    scrollToBottom(); msgRecv();
+    var inputArea = document.getElementById('inputArea');
+    if (inputArea) { inputArea.outerHTML = buildInputArea(nextEx); }
+    sceneProgress.textContent = 'Turn ' + (exchangeIdx + 1) + ' of ' + sc.exchanges.length;
+  }
+
+  function appendUserMessage(text) {
+    var chat = document.getElementById('chatArea');
+    if (!chat) return;
+    chat.insertAdjacentHTML('beforeend', buildUserBubble(text));
+    scrollToBottom();
+  }
+
+  // ==================== RESULTS ====================
+  function showResults() {
+    var sc = SCENES[currentScene];
+    var scores = computeFinalScores();
+    var avg = Math.round((scores.task + scores.accuracy + scores.fluency) / 3);
+    var stars = getStars(avg);
+    var prev = sceneScores[currentScene];
+    if (!prev || avg > Math.round((prev.task + prev.accuracy + prev.fluency) / 3)) { sceneScores[currentScene] = scores; }
+    if (stars >= 2) resultFanfare();
+    btnBack.style.display = '';
+    sceneTitle.textContent = sc.title; sceneProgress.textContent = 'Conversation complete ✓';
+    var msg = stars >= 2 ? 'Well done! 🎉' : stars >= 1 ? 'Good effort! 👍' : 'Keep practicing! 💪';
+    var tip = scores.accuracy < 75 ? '💡 Tip: Try using full sentences like "I\'d like a coffee, please." instead of single words.' :
+              scores.fluency < 75 ? '💡 Tip: Read the quick options aloud before choosing — it helps with speaking fluency!' :
+              '💡 Great conversation skills! Try the next scenario to keep building confidence.';
+    var tags = sc.vocab.map(function(v) { return '<span class="v-tag">' + v + '</span>'; }).join('');
+    render('<div class="screen active results-screen"><div class="result-icon">' + sc.icon + '</div><h2>' + msg + '</h2><div class="result-scores"><div class="score-card"><div class="sc-value" style="color:' + (scores.task >= 70 ? 'var(--success)' : 'var(--warn)') + '">' + scores.task + '%</div><div class="sc-label">Task Completion</div><div class="sc-stars">' + '⭐'.repeat(getStars(scores.task)) + '</div></div><div class="score-card"><div class="sc-value" style="color:' + (scores.accuracy >= 70 ? 'var(--success)' : 'var(--warn)') + '">' + scores.accuracy + '%</div><div class="sc-label">Accuracy</div><div class="sc-stars">' + '⭐'.repeat(getStars(scores.accuracy)) + '</div></div><div class="score-card"><div class="sc-value" style="color:' + (scores.fluency >= 70 ? 'var(--success)' : 'var(--warn)') + '">' + scores.fluency + '%</div><div class="sc-label">Fluency</div><div class="sc-stars">' + '⭐'.repeat(getStars(scores.fluency)) + '</div></div></div><div class="result-tip">' + tip + '</div><p style="font-size:0.75rem;color:var(--text-light);margin-top:-8px">Vocabulary from this conversation</p><div class="result-vocab">' + tags + '</div><div class="btn-row"><button class="btn btn-primary" data-action="retryScene">🔄 Try Again</button><button class="btn btn-outline" data-action="goHome">← Back to Scenarios</button></div></div>');
+  }
+
+  // ==================== EVENT HANDLING ====================
+  mainArea.addEventListener('click', function(e) {
+    var aiBubble = e.target.closest('.ai-bubble');
+    if (aiBubble && !e.target.closest('[data-action]')) {
+      warmUpSpeech(); var text = aiBubble.getAttribute('data-speak'); if (text) say(text); return;
+    }
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    warmUpSpeech();
+    var act = el.getAttribute('data-action');
+    switch (act) {
+      case 'startScene': showSceneIntro(el.getAttribute('data-scene')); break;
+      case 'goHome': showHome(); break;
+      case 'beginChat': beginChat(); break;
+      case 'pickOption': pickOption(Number(el.getAttribute('data-idx'))); break;
+      case 'toggleVoice': toggleVoice(); break;
+      case 'sendFree': sendFreeInput(); break;
+      case 'retryScene': showSceneIntro(currentScene); break;
+    }
+  });
+
+  mainArea.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.id === 'freeInput') { e.preventDefault(); sendFreeInput(); }
+  });
+
+  document.getElementById('topBar').addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    if (el.getAttribute('data-action') === 'goHome') showHome();
+  });
+
+  // ==================== INIT ====================
+  showHome();
+})();
+</script>
+</body>
+</html>

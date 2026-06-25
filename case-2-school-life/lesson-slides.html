@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My School Life — Interactive English Course</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #1a237e; --navy-light: #283593; --blue: #1565c0; --sky: #42a5f5;
+  --teal: #00695c; --teal-light: #26a69a;
+  --gold: #f9a825; --gold-light: #ffe082;
+  --coral: #d32f2f; --coral-light: #ffcdd2;
+  --green: #2e7d32; --green-light: #c8e6c9;
+  --purple: #6a1b9a; --purple-light: #e1bee7;
+  --orange: #ef6c00; --orange-light: #ffe0b2;
+  --card: #ffffff; --bg: #f0f2f5; --text: #263238; --text-light: #607d8b;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 16px;
+  --bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #1a1a2e; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  width: 100%; max-width: 800px; height: 100vh; max-height: 750px;
+  background: var(--bg); border-radius: 8px; overflow: hidden;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column;
+}
+@media (max-width: 820px) { .app { max-width: 100%; border-radius: 0; max-height: 100vh; } }
+
+/* ========== TOP BAR ========== */
+.top-bar {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: white; padding: 12px 20px; display: flex;
+  align-items: center; justify-content: space-between; flex-shrink: 0;
+  min-height: 52px;
+}
+.top-bar .logo { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.top-bar .logo .icon { font-size: 1.3rem; }
+.top-bar .lesson-title { font-size: 0.9rem; font-weight: 600; opacity: 0.9; }
+.btn-home {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  padding: 6px 14px; border-radius: 50px; cursor: pointer;
+  font-family: inherit; font-weight: 600; font-size: 0.8rem;
+  transition: all 0.15s ease; outline: none;
+}
+.btn-home:hover { background: rgba(255,255,255,0.25); }
+.btn-home:active { transform: scale(0.94); }
+
+/* ========== MAIN AREA ========== */
+.main-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; }
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* ========== HOME SCREEN ========== */
+.home-screen { gap: 20px; }
+.home-header { text-align: center; margin-bottom: 4px; }
+.home-header h1 { font-size: 1.5rem; font-weight: 800; color: var(--navy); }
+.home-header p { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+
+.lesson-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 500px) { .lesson-grid { grid-template-columns: 1fr; } }
+
+.lesson-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px 18px;
+  cursor: pointer; transition: all 0.2s ease;
+  border: 2px solid transparent; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04); outline: none;
+  position: relative;
+}
+.lesson-card:hover:not(.locked) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); border-color: var(--sky); }
+.lesson-card:active:not(.locked) { transform: scale(0.97); }
+.lesson-card.completed { border-color: var(--green-light); background: #f9fff9; }
+.lesson-card.locked { opacity: 0.5; cursor: default; }
+.lesson-card .lc-icon { font-size: 2.2rem; flex-shrink: 0; }
+.lesson-card .lc-info { flex: 1; min-width: 0; }
+.lesson-card .lc-info h3 { font-size: 0.9rem; font-weight: 700; color: var(--navy); }
+.lesson-card .lc-info .lc-desc { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+.lesson-card .lc-stars { font-size: 0.85rem; margin-top: 4px; }
+.lesson-card .lc-lock { font-size: 1.2rem; flex-shrink: 0; }
+
+/* ========== SLIDE CARD ========== */
+.slide-card {
+  background: var(--card); border-radius: var(--radius); padding: 28px 28px 22px;
+  box-shadow: var(--shadow); flex: 1; display: flex; flex-direction: column;
+  animation: slideIn 0.35s var(--bounce);
+}
+@keyframes slideIn {
+  0% { opacity: 0; transform: translateX(30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.slide-header { text-align: center; margin-bottom: 20px; }
+.slide-header .step-badge {
+  display: inline-block; background: var(--navy); color: white;
+  font-size: 0.7rem; padding: 3px 12px; border-radius: 50px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.slide-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--navy); margin-top: 8px; }
+.slide-header p { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; }
+
+.slide-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* Progress dots */
+.progress-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.progress-dots .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #ddd;
+  transition: all 0.3s ease;
+}
+.progress-dots .dot.done { background: var(--teal); }
+.progress-dots .dot.current { background: var(--navy); transform: scale(1.4); }
+
+/* ========== VOCAB SLIDE ========== */
+.vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 500px) { .vocab-grid { grid-template-columns: 1fr; } }
+.vocab-item {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  background: #f8f9fb; border-radius: 12px; transition: all 0.2s ease;
+}
+.vocab-item:hover { background: #eef1f8; }
+.vocab-item .v-emoji { font-size: 2rem; width: 44px; text-align: center; flex-shrink: 0; }
+.vocab-item .v-word { font-size: 1.1rem; font-weight: 700; color: var(--navy); flex: 1; }
+.btn-speak {
+  width: 38px; height: 38px; border-radius: 50%; border: 2px solid #ddd;
+  background: white; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease; outline: none; flex-shrink: 0;
+}
+.btn-speak:hover { border-color: var(--sky); background: #e3f2fd; transform: scale(1.1); }
+.btn-speak:active { transform: scale(0.9); }
+.btn-speak.speaking { border-color: var(--sky); background: var(--sky); color: white; animation: speakerPulse 0.6s ease-in-out infinite; }
+@keyframes speakerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(66,165,245,0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(66,165,245,0); }
+}
+
+/* ========== SENTENCE SLIDE ========== */
+.sentence-box {
+  background: linear-gradient(135deg, #e8eaf6, #e3f2fd);
+  border-radius: 14px; padding: 20px 24px; margin-bottom: 12px;
+  border-left: 4px solid var(--navy);
+}
+.sentence-box .s-en { font-size: 1.2rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sentence-box .s-zh { font-size: 0.85rem; color: var(--text-light); }
+.sentence-box .s-note { font-size: 0.75rem; color: var(--teal); margin-top: 6px; font-weight: 600; }
+
+/* ========== PRACTICE SLIDES ========== */
+.practice-prompt { text-align: center; margin-bottom: 16px; }
+.practice-prompt .prompt-emoji { font-size: 3rem; display: block; margin-bottom: 8px; }
+.practice-prompt .prompt-text { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+.practice-prompt .prompt-sentence { font-size: 1.15rem; color: var(--navy); font-weight: 700; }
+.practice-prompt .prompt-blank { display: inline-block; border-bottom: 3px dashed var(--coral); min-width: 80px; margin: 0 6px; }
+
+.options-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.opt-btn {
+  background: #f5f6f8; border: 3px solid transparent; border-radius: 14px;
+  padding: 14px 22px; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s ease; text-align: center; color: var(--text);
+  font-family: inherit; outline: none; min-width: 90px;
+}
+.opt-btn:hover { background: #e8ecf2; transform: translateY(-2px); }
+.opt-btn:active { transform: scale(0.95); }
+.opt-btn.correct { background: var(--green-light); border-color: var(--green); animation: correctFlash 0.6s ease; pointer-events: none; }
+.opt-btn.wrong { background: var(--coral-light); border-color: var(--coral); animation: shake 0.4s ease; pointer-events: none; }
+.opt-btn.disabled { pointer-events: none; opacity: 0.7; }
+@keyframes correctFlash { 0%, 100% { background: #c8e6c9; } 50% { background: #a5d6a7; } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); } 40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
+}
+
+.feedback-area { text-align: center; min-height: 32px; margin-top: 16px; font-weight: 700; font-size: 1rem; }
+.feedback-area.good { color: var(--green); }
+.feedback-area.ops { color: var(--coral); }
+
+/* ========== MATCH SLIDE ========== */
+.match-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+.match-col { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+.match-item {
+  padding: 10px 14px; border-radius: 10px; background: #f5f6f8;
+  border: 2px solid #e0e0e0; cursor: pointer; font-weight: 600;
+  font-size: 0.9rem; transition: all 0.15s ease; text-align: center;
+}
+.match-item:hover { background: #e8ecf2; }
+.match-item.selected { border-color: var(--sky); background: #e3f2fd; }
+.match-item.matched { border-color: var(--green); background: var(--green-light); pointer-events: none; }
+.match-item.wrong-flash { border-color: var(--coral); background: var(--coral-light); }
+
+/* ========== SORT SLIDE ========== */
+.sort-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #f5f6f8; border-radius: 12px; margin-bottom: 8px;
+}
+.sort-item .sort-text { font-weight: 600; font-size: 0.95rem; }
+.sort-btns { display: flex; gap: 8px; }
+.sort-btn {
+  padding: 6px 16px; border-radius: 50px; border: 2px solid #ddd;
+  background: white; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+  font-family: inherit; transition: all 0.15s ease; outline: none;
+}
+.sort-btn:hover { transform: scale(1.05); }
+.sort-btn.must-pick { border-color: var(--green); color: var(--green); }
+.sort-btn.mustnt-pick { border-color: var(--coral); color: var(--coral); }
+.sort-btn.chosen-correct { background: var(--green-light); border-color: var(--green); color: var(--green); pointer-events: none; }
+.sort-btn.chosen-wrong { background: var(--coral-light); border-color: var(--coral); color: var(--coral); pointer-events: none; }
+.sort-btn:disabled { pointer-events: none; opacity: 0.5; }
+
+/* ========== LESSON COMPLETE ========== */
+.complete-screen { align-items: center; justify-content: center; text-align: center; gap: 16px; }
+.stars-display { font-size: 3rem; letter-spacing: 6px; }
+.stars-display .star { display: inline-block; animation: starPop 0.5s var(--bounce) both; }
+.stars-display .star:nth-child(1) { animation-delay: 0.1s; }
+.stars-display .star:nth-child(2) { animation-delay: 0.3s; }
+.stars-display .star:nth-child(3) { animation-delay: 0.5s; }
+@keyframes starPop {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.complete-screen .score-text { font-size: 1.1rem; color: var(--text-light); }
+.complete-screen h2 { font-size: 1.5rem; font-weight: 800; color: var(--navy); }
+
+/* ========== UNIT COMPLETE ========== */
+.unit-complete { align-items: center; justify-content: center; text-align: center; gap: 18px; }
+.unit-complete .trophy { font-size: 4rem; animation: float 2s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.unit-complete h2 {
+  font-size: 1.6rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), #ff8f00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ========== BUTTONS ========== */
+.btn {
+  border: none; cursor: pointer; font-family: inherit; font-weight: 700;
+  font-size: 1rem; padding: 12px 32px; border-radius: 50px;
+  transition: all 0.2s ease; display: inline-flex; align-items: center;
+  gap: 8px; outline: none; text-decoration: none;
+}
+.btn-primary { background: var(--navy); color: white; }
+.btn-primary:hover { background: var(--navy-light); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.95); }
+.btn-success { background: var(--teal); color: white; }
+.btn-success:hover { background: var(--teal-light); transform: translateY(-1px); }
+.btn-success:active { transform: scale(0.95); }
+.btn-outline { background: white; color: var(--navy); border: 2px solid var(--navy); }
+.btn-outline:hover { background: #f5f6f8; }
+
+.btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+/* ========== BOTTOM NAV ========== */
+.bottom-bar {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 10px 20px; background: white; border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+.bottom-bar .btn { font-size: 0.85rem; padding: 8px 22px; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 500px) {
+  .main-area { padding: 14px; }
+  .slide-card { padding: 18px 14px 14px; }
+  .lesson-grid { grid-template-columns: 1fr; }
+  .match-container { flex-direction: column; align-items: center; }
+  .match-col { min-width: 140px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="top-bar" id="topBar">
+    <span class="logo"><span class="icon">🏫</span> My School Life</span>
+    <span class="lesson-title" id="lessonTitle"></span>
+    <button class="btn-home" id="btnHome" data-action="goHome">← Home</button>
+  </div>
+  <div class="main-area" id="mainArea"></div>
+  <div class="bottom-bar" id="bottomBar" style="display:none">
+    <button class="btn btn-outline" id="btnPrev" data-action="prevSlide">← Back</button>
+    <span style="font-size:0.8rem;color:var(--text-light);font-weight:600" id="slideIndicator"></span>
+    <button class="btn btn-primary" id="btnNext" data-action="nextSlide">Next →</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== AUDIO ENGINE ====================
+  var _actx = null;
+  function ctx() {
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === 'suspended') _actx.resume();
+    return _actx;
+  }
+  function tone(freq, dur, vol, delay) {
+    try {
+      var c = ctx();
+      var t = c.currentTime + (delay || 0);
+      var osc = c.createOscillator();
+      var g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    } catch(e) {}
+  }
+  function ding()  { tone(880, 0.15, 0.25); tone(1100, 0.1, 0.15, 0.08); }
+  function buzz()  { tone(150, 0.25, 0.12); }
+  function fanfare() {
+    [523, 659, 784, 1047].forEach(function(f, i) { tone(f, 0.18, 0.25, i * 0.1); });
+  }
+
+  // Speech synthesis — robust voice loading for Chrome on Windows
+  var _voices = [];
+  var _voicesReady = false;
+  var _speechWarmedUp = false;
+
+  if (window.speechSynthesis) {
+    _voices = window.speechSynthesis.getVoices();
+    if (_voices.length > 0) _voicesReady = true;
+    window.speechSynthesis.onvoiceschanged = function() {
+      _voices = window.speechSynthesis.getVoices();
+      if (_voices.length > 0) _voicesReady = true;
+    };
+  }
+
+  // Prime the speech engine on first user click (Chrome requires a user gesture)
+  function warmUpSpeech() {
+    if (_speechWarmedUp || !window.speechSynthesis) return;
+    _speechWarmedUp = true;
+    try {
+      var s = window.speechSynthesis;
+      // Force reload voices
+      _voices = s.getVoices();
+      if (_voices.length > 0) _voicesReady = true;
+      // Speak a silent utterance to kick-start the engine
+      var u = new SpeechSynthesisUtterance('');
+      u.volume = 0;
+      s.speak(u);
+    } catch(e) {}
+  }
+
+  function say(word) {
+    if (!window.speechSynthesis) return;
+    var s = window.speechSynthesis;
+    if (s.paused) s.resume();
+
+    // Refresh voices if not ready yet (Chrome may load them lazily)
+    if (!_voicesReady) {
+      _voices = s.getVoices();
+      if (_voices.length > 0) _voicesReady = true;
+    }
+
+    var u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.1;
+
+    // Pick best English voice from cached list
+    if (_voices.length > 0) {
+      for (var i = 0; i < _voices.length; i++) {
+        if (_voices[i].lang === 'en-US' && _voices[i].name.indexOf('Google') >= 0) { u.voice = _voices[i]; break; }
+      }
+      if (!u.voice) {
+        for (var j = 0; j < _voices.length; j++) {
+          if (_voices[j].lang.indexOf('en') === 0) { u.voice = _voices[j]; break; }
+        }
+      }
+    }
+
+    if (s.speaking) s.cancel();
+    s.speak(u);
+  }
+
+  // ==================== STATE ====================
+  var currentLesson = -1; // -1 = home
+  var currentSlide = 0;
+  var lessonStars = {};   // { lessonId: 0|1|2|3 }
+  var lessonScores = {};  // { lessonId: {correct, total} }
+  var answered = false;   // whether current practice slide is fully answered
+  var slideQuestionIdx = 0; // which question within the current practice slide
+
+  function isLessonUnlocked(lessonId) {
+    if (lessonId === 1) return true;
+    return (lessonStars[lessonId - 1] || 0) >= 1;
+  }
+
+  function getStarsForScore(correct, total) {
+    var pct = correct / total;
+    return pct >= 0.9 ? 3 : pct >= 0.6 ? 2 : pct >= 0.3 ? 1 : 0;
+  }
+
+  // ==================== DOM REFS ====================
+  var mainArea = document.getElementById('mainArea');
+  var topBar = document.getElementById('topBar');
+  var bottomBar = document.getElementById('bottomBar');
+  var lessonTitleEl = document.getElementById('lessonTitle');
+  var slideIndicator = document.getElementById('slideIndicator');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  var btnHome = document.getElementById('btnHome');
+
+  function render(html) { mainArea.innerHTML = html; }
+  function updateTopBar(title) {
+    lessonTitleEl.textContent = title || '';
+    btnHome.style.display = (currentLesson >= 0) ? '' : 'none';
+  }
+  function updateBottomBar(slideIdx, total) {
+    if (total <= 1) { bottomBar.style.display = 'none'; return; }
+    bottomBar.style.display = 'flex';
+    slideIndicator.textContent = (slideIdx + 1) + ' / ' + total;
+    btnPrev.style.display = slideIdx > 0 ? '' : 'none';
+  }
+
+  // ==================== LESSON DATA ====================
+  // Each lesson has: id, title, icon, desc, slides[]
+  // Slide types: 'title', 'vocab', 'sentence', 'mc', 'fill', 'match', 'sort', 'complete'
+
+  var LESSONS = [
+    // ===== L1: School Subjects =====
+    {
+      id: 1, title: 'School Subjects', icon: '📚',
+      desc: '8 subjects · I like ___ best.',
+      slides: [
+        { type: 'title', title: 'School Subjects', text: 'Learn 8 school subjects and say which one you like best!' },
+        { type: 'vocab', title: 'Subjects ①', words: [
+          { word: 'math', emoji: '🔢' },
+          { word: 'English', emoji: '🔤' },
+          { word: 'science', emoji: '🔬' },
+          { word: 'art', emoji: '🎨' }
+        ]},
+        { type: 'vocab', title: 'Subjects ②', words: [
+          { word: 'music', emoji: '🎵' },
+          { word: 'PE', emoji: '⚽' },
+          { word: 'history', emoji: '📜' },
+          { word: 'Chinese', emoji: '🈶' }
+        ]},
+        { type: 'sentence', title: 'Express Your Favorite', patterns: [
+          { en: 'What subject do you like?', zh: '你喜欢什么科目？' },
+          { en: 'I like art best.', zh: '我最喜欢美术。', note: 'I like ___ best.' },
+          { en: 'My favorite subject is science.', zh: '我最喜欢的科目是科学。', note: 'My favorite subject is ___.' }
+        ]},
+        { type: 'mc', title: 'Practice: Pick the Word', questions: [
+          { emoji: '🔢', correct: 'math', options: ['math', 'art', 'PE'] },
+          { emoji: '🎨', correct: 'art', options: ['music', 'art', 'history'] },
+          { emoji: '⚽', correct: 'PE', options: ['science', 'Chinese', 'PE'] },
+          { emoji: '📜', correct: 'history', options: ['history', 'English', 'math'] }
+        ]},
+        { type: 'fill', title: 'Practice: Complete the Sentence', prompt: 'Choose the best word.',
+          sentences: [
+            { before: 'My favorite subject is', after: '.', correct: 'music', options: ['music', 'Monday', 'library'] },
+            { before: 'I like', after: 'best.', correct: 'English', options: ['gym', 'English', 'tall'] },
+            { before: 'At school, I love', after: 'class.', correct: 'science', options: ['science', 'breakfast', 'friendly'] }
+        ]},
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L2: My Timetable =====
+    {
+      id: 2, title: 'My Timetable', icon: '📅',
+      desc: 'Days & times · On Monday I have...',
+      slides: [
+        { type: 'title', title: 'My Timetable', text: 'Learn days of the week and talk about your school schedule!' },
+        { type: 'vocab', title: 'Days of the Week', words: [
+          { word: 'Monday', emoji: '📅' },
+          { word: 'Tuesday', emoji: '📅' },
+          { word: 'Wednesday', emoji: '📅' },
+          { word: 'Thursday', emoji: '📅' },
+          { word: 'Friday', emoji: '🎉' },
+          { word: 'Saturday', emoji: '🎮' },
+          { word: 'Sunday', emoji: '😴' }
+        ]},
+        { type: 'vocab', title: 'Time Words', words: [
+          { word: 'morning', emoji: '🌅' },
+          { word: 'afternoon', emoji: '☀️' },
+          { word: 'timetable', emoji: '🗓️' },
+          { word: 'after lunch', emoji: '🍱' }
+        ]},
+        { type: 'sentence', title: 'Talk About Your Schedule', patterns: [
+          { en: 'On Monday morning, I have math.', zh: '周一早上，我有数学课。', note: 'On ___ ___, I have ___.' },
+          { en: 'After lunch, I have art.', zh: '午饭后，我有美术课。', note: 'After lunch, I have ___.' },
+          { en: 'When do you have science?', zh: '你什么时候有科学课？', note: 'When do you have ___?' }
+        ]},
+        { type: 'fill', title: 'Practice: Complete the Timetable', prompt: 'Fill in the blank.',
+          sentences: [
+            { before: 'On', after: 'morning, I have English.', correct: 'Monday', options: ['Monday', 'afternoon', 'gym'] },
+            { before: 'After lunch, I have', after: '.', correct: 'music', options: ['Tuesday', 'music', 'morning'] },
+            { before: 'On Friday', after: ', I have PE.', correct: 'afternoon', options: ['afternoon', 'Wednesday', 'library'] }
+        ]},
+        { type: 'mc', title: 'Practice: What Day?', questions: [
+          { emoji: '🎉', correct: 'Friday', options: ['Monday', 'Friday', 'Tuesday'] },
+          { emoji: '😴', correct: 'Sunday', options: ['Tuesday', 'Thursday', 'Sunday'] },
+          { emoji: '🎮', correct: 'Saturday', options: ['Saturday', 'Wednesday', 'Friday'] }
+        ]},
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L3: Daily Routine =====
+    {
+      id: 3, title: 'Daily Routine', icon: '⏰',
+      desc: '7 daily activities · I ___ at ___ o\'clock.',
+      slides: [
+        { type: 'title', title: 'Daily Routine', text: 'Learn to describe your daily routine from morning to night!' },
+        { type: 'vocab', title: 'Morning Routine', words: [
+          { word: 'get up', emoji: '⏰' },
+          { word: 'have breakfast', emoji: '🍳' },
+          { word: 'go to school', emoji: '🏃' }
+        ]},
+        { type: 'vocab', title: 'Afternoon & Evening', words: [
+          { word: 'have lunch', emoji: '🍱' },
+          { word: 'go home', emoji: '🏠' },
+          { word: 'do homework', emoji: '📝' },
+          { word: 'go to bed', emoji: '🛏️' }
+        ]},
+        { type: 'sentence', title: 'Describe Your Day', patterns: [
+          { en: 'I get up at 7 o\'clock.', zh: '我7点起床。', note: 'I ___ at ___ o\'clock.' },
+          { en: 'Then I have breakfast.', zh: '然后我吃早餐。', note: 'Then I ___.' },
+          { en: 'After school, I do homework.', zh: '放学后，我做作业。', note: 'After school, I ___.' }
+        ]},
+        { type: 'mc', title: 'Practice: What\'s the Action?', questions: [
+          { emoji: '⏰', correct: 'get up', options: ['go to bed', 'get up', 'have lunch'] },
+          { emoji: '🍳', correct: 'have breakfast', options: ['have breakfast', 'do homework', 'go home'] },
+          { emoji: '📝', correct: 'do homework', options: ['go to school', 'have lunch', 'do homework'] },
+          { emoji: '🛏️', correct: 'go to bed', options: ['get up', 'go to bed', 'have breakfast'] }
+        ]},
+        { type: 'fill', title: 'Practice: My Day', prompt: 'Complete the sentence about daily routine.',
+          sentences: [
+            { before: 'I', after: 'at 7 o\'clock.', correct: 'get up', options: ['get up', 'go home', 'have lunch'] },
+            { before: 'Then I', after: '.', correct: 'have breakfast', options: ['go to bed', 'have breakfast', 'do homework'] },
+            { before: 'After school, I', after: '.', correct: 'do homework', options: ['get up', 'have lunch', 'do homework'] }
+        ]},
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L4: Classroom Language =====
+    {
+      id: 4, title: 'Classroom Language', icon: '🙋',
+      desc: '8 useful phrases · Can I ___?',
+      slides: [
+        { type: 'title', title: 'Classroom Language', text: 'Learn 8 useful phrases to speak English in class every day!' },
+        { type: 'vocab', title: 'Asking for Help', words: [
+          { word: 'Can you repeat that, please?', emoji: '🔁' },
+          { word: 'I don\'t understand.', emoji: '🤔' },
+          { word: 'How do you spell it?', emoji: '✍️' },
+          { word: 'What does it mean?', emoji: '❓' }
+        ]},
+        { type: 'vocab', title: 'Classroom Requests', words: [
+          { word: 'Can I go to the bathroom?', emoji: '🚻' },
+          { word: 'Can I borrow a pencil?', emoji: '✏️' },
+          { word: 'May I come in?', emoji: '🚪' },
+          { word: 'I\'m finished.', emoji: '✅' }
+        ]},
+        { type: 'sentence', title: 'Sentence Patterns', patterns: [
+          { en: 'Can I go to the bathroom?', zh: '我可以去洗手间吗？', note: 'Can I ___?' },
+          { en: 'How do you spell "science"?', zh: '"science"怎么拼？', note: 'How do you spell ___?' },
+          { en: 'What does "timetable" mean?', zh: '"timetable"是什么意思？', note: 'What does ___ mean?' }
+        ]},
+        { type: 'match', title: 'Practice: Match the Phrase',
+          left: [
+            { id: 'a', text: 'You need to go to the bathroom', emoji: '🚻' },
+            { id: 'b', text: 'You didn\'t hear the teacher', emoji: '👂' },
+            { id: 'c', text: 'You don\'t know a word', emoji: '🤔' },
+            { id: 'd', text: 'You need a pencil', emoji: '✏️' }
+          ],
+          right: [
+            { id: '1', text: 'Can I go to the bathroom?', matchId: 'a' },
+            { id: '2', text: 'Can you repeat that, please?', matchId: 'b' },
+            { id: '3', text: 'What does ___ mean?', matchId: 'c' },
+            { id: '4', text: 'Can I borrow a pencil?', matchId: 'd' }
+          ]
+        },
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L5: Places in School =====
+    {
+      id: 5, title: 'Places in School', icon: '🏫',
+      desc: '8 school places · The ___ is next to the ___.',
+      slides: [
+        { type: 'title', title: 'Places in School', text: 'Learn the names of school places and describe where they are!' },
+        { type: 'vocab', title: 'School Places ①', words: [
+          { word: 'library', emoji: '📚' },
+          { word: 'gym', emoji: '🏋️' },
+          { word: 'cafeteria', emoji: '🍽️' },
+          { word: 'playground', emoji: '🛝' }
+        ]},
+        { type: 'vocab', title: 'School Places ②', words: [
+          { word: 'nurse\'s office', emoji: '🏥' },
+          { word: 'computer lab', emoji: '💻' },
+          { word: 'music room', emoji: '🎹' },
+          { word: 'art room', emoji: '🖌️' }
+        ]},
+        { type: 'sentence', title: 'Describe Locations', patterns: [
+          { en: 'The library is next to the gym.', zh: '图书馆在体育馆旁边。', note: 'The ___ is next to the ___.' },
+          { en: 'The cafeteria is on the first floor.', zh: '食堂在一楼。', note: 'The ___ is on the ___ floor.' },
+          { en: 'Where is the computer lab?', zh: '计算机室在哪里？', note: 'Where is the ___?' }
+        ]},
+        { type: 'mc', title: 'Practice: Name the Place', questions: [
+          { emoji: '📚', correct: 'library', options: ['gym', 'library', 'cafeteria'] },
+          { emoji: '🏋️', correct: 'gym', options: ['gym', 'art room', 'playground'] },
+          { emoji: '🍽️', correct: 'cafeteria', options: ['library', 'nurse\'s office', 'cafeteria'] },
+          { emoji: '💻', correct: 'computer lab', options: ['music room', 'computer lab', 'playground'] }
+        ]},
+        { type: 'fill', title: 'Practice: Where Is It?', prompt: 'Complete the location sentence.',
+          sentences: [
+            { before: 'Students read and study in the', after: '.', correct: 'library', options: ['library', 'cafeteria', 'playground'] },
+            { before: 'The gym is', after: 'the library and the cafeteria.', correct: 'between', options: ['between', 'next to', 'on'] },
+            { before: 'You can play basketball in the', after: '.', correct: 'gym', options: ['gym', 'library', 'art room'] }
+        ]},
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L6: School Rules =====
+    {
+      id: 6, title: 'School Rules', icon: '📋',
+      desc: '8 rules · We must / mustn\'t...',
+      slides: [
+        { type: 'title', title: 'School Rules', text: 'Learn to talk about school rules using must and mustn\'t!' },
+        { type: 'vocab', title: 'Rules & Expectations', words: [
+          { word: 'wear a uniform', emoji: '👔' },
+          { word: 'be on time', emoji: '⏰' },
+          { word: 'raise your hand', emoji: '✋' },
+          { word: 'keep quiet', emoji: '🤫' }
+        ]},
+        { type: 'vocab', title: 'More Rules', words: [
+          { word: 'run in the hallway', emoji: '🏃' },
+          { word: 'chew gum', emoji: '🍬' },
+          { word: 'do your homework', emoji: '📝' },
+          { word: 'be kind to others', emoji: '💝' }
+        ]},
+        { type: 'sentence', title: 'Must & Mustn\'t', patterns: [
+          { en: 'We must wear our uniform.', zh: '我们必须穿校服。', note: 'We must ___. (= it\'s required)' },
+          { en: 'We mustn\'t run in the hallway.', zh: '我们不能在走廊奔跑。', note: 'We mustn\'t ___. (= it\'s not allowed)' },
+          { en: 'You should be on time.', zh: '你应该准时。', note: 'You should ___. (= it\'s a good idea)' }
+        ]},
+        { type: 'sort', title: 'Practice: Must or Mustn\'t?',
+          items: [
+            { text: 'wear a uniform', correct: 'must' },
+            { text: 'run in the hallway', correct: 'mustnt' },
+            { text: 'be on time', correct: 'must' },
+            { text: 'chew gum in class', correct: 'mustnt' },
+            { text: 'raise your hand to speak', correct: 'must' },
+            { text: 'be kind to others', correct: 'must' }
+          ]
+        },
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L7: My Friends =====
+    {
+      id: 7, title: 'My Friends', icon: '👫',
+      desc: '9 adjectives · ___ is taller than me.',
+      slides: [
+        { type: 'title', title: 'My Friends', text: 'Learn to describe your friends using adjectives and comparatives!' },
+        { type: 'vocab', title: 'Appearance', words: [
+          { word: 'tall', emoji: '📏' },
+          { word: 'short', emoji: '📏' }
+        ]},
+        { type: 'vocab', title: 'Personality', words: [
+          { word: 'friendly', emoji: '😊' },
+          { word: 'shy', emoji: '🤭' },
+          { word: 'funny', emoji: '😂' },
+          { word: 'serious', emoji: '😐' },
+          { word: 'hard-working', emoji: '💪' },
+          { word: 'kind', emoji: '💝' },
+          { word: 'sporty', emoji: '⚽' },
+          { word: 'creative', emoji: '🎨' }
+        ]},
+        { type: 'sentence', title: 'Compare People', patterns: [
+          { en: 'She is taller than me.', zh: '她比我高。', note: '___ is ___er than me. (comparative)' },
+          { en: 'He is the funniest in our class.', zh: '他是我们班最搞笑的。', note: '___ is the ___est. (superlative)' },
+          { en: 'We both like sports.', zh: '我们都喜欢运动。', note: 'We both like ___. (shared)' }
+        ]},
+        { type: 'fill', title: 'Practice: Compare', prompt: 'Fill in the comparative form.',
+          sentences: [
+            { before: 'Tom is 160cm. Sam is 150cm. Tom is', after: 'than Sam.', correct: 'taller', options: ['tall', 'taller', 'tallest'] },
+            { before: 'Lucy always says hello. She is very', after: '.', correct: 'friendly', options: ['shy', 'friendly', 'serious'] },
+            { before: 'Jack makes everyone laugh. He is the', after: 'in our class.', correct: 'funniest', options: ['funny', 'funnier', 'funniest'] }
+        ]},
+        { type: 'mc', title: 'Practice: Describe the Person', questions: [
+          { emoji: '😊', correct: 'friendly', options: ['shy', 'friendly', 'serious'] },
+          { emoji: '💪', correct: 'hard-working', options: ['funny', 'sporty', 'hard-working'] },
+          { emoji: '😂', correct: 'funny', options: ['funny', 'serious', 'shy'] }
+        ]},
+        { type: 'complete' }
+      ]
+    },
+
+    // ===== L8: Review Challenge =====
+    {
+      id: 8, title: 'Review Challenge', icon: '🏆',
+      desc: 'Mixed review · Show what you know!',
+      slides: [
+        { type: 'title', title: 'Review Challenge 🏆', text: 'Review vocabulary and sentences from all 7 lessons. Good luck!' },
+        { type: 'mc', title: 'Review: School Words', questions: [
+          { emoji: '🔬', correct: 'science', options: ['math', 'science', 'history'] },
+          { emoji: '🍽️', correct: 'cafeteria', options: ['library', 'gym', 'cafeteria'] },
+          { emoji: '⏰', correct: 'get up', options: ['go to bed', 'get up', 'have lunch'] },
+          { emoji: '👔', correct: 'wear a uniform', options: ['wear a uniform', 'chew gum', 'be kind'] }
+        ]},
+        { type: 'fill', title: 'Review: Sentences', prompt: 'Complete these sentences from the unit.',
+          sentences: [
+            { before: 'My favorite subject is', after: '.', correct: 'English', options: ['Monday', 'English', 'library'] },
+            { before: 'On Monday morning, I have', after: '.', correct: 'math', options: ['math', 'get up', 'tall'] },
+            { before: 'The library is next to the', after: '.', correct: 'gym', options: ['gym', 'music', 'friendly'] },
+            { before: 'We must', after: 'our uniform.', correct: 'wear', options: ['run', 'wear', 'chew'] }
+        ]},
+        { type: 'match', title: 'Review: Match the Phrases',
+          left: [
+            { id: 'a', text: 'Ask to go to the bathroom', emoji: '🚻' },
+            { id: 'b', text: 'Say you don\'t understand', emoji: '🤔' },
+            { id: 'c', text: 'Describe someone who is not short', emoji: '📏' },
+            { id: 'd', text: 'Say what you do at 7:00 am', emoji: '⏰' }
+          ],
+          right: [
+            { id: '1', text: 'Can I go to the bathroom?', matchId: 'a' },
+            { id: '2', text: 'I don\'t understand.', matchId: 'b' },
+            { id: '3', text: 'He is tall.', matchId: 'c' },
+            { id: '4', text: 'I get up.', matchId: 'd' }
+          ]
+        },
+        { type: 'complete' }
+      ]
+    }
+  ];
+
+  // ==================== SCORING STATE PER LESSON ====================
+  // Each lesson tracks: current slide index, answers for practice slides
+  var lessonState = {}; // { lessonId: { slideIdx, practiceResults: [{correct:bool}, ...] } }
+
+  function resetLessonState(id) {
+    lessonState[id] = { slideIdx: 0, practiceResults: [] };
+  }
+
+  function getPracticeResults(id) {
+    var st = lessonState[id];
+    if (!st) return [];
+    return st.practiceResults;
+  }
+
+  function addPracticeResult(id, correct) {
+    var st = lessonState[id];
+    if (!st) { resetLessonState(id); st = lessonState[id]; }
+    st.practiceResults.push(correct);
+  }
+
+  // ==================== RENDER: HOME ====================
+  function showHome() {
+    currentLesson = -1; currentSlide = 0;
+    updateTopBar('');
+    bottomBar.style.display = 'none';
+
+    var allDone = true;
+    var cardsHtml = '';
+    LESSONS.forEach(function(l) {
+      var unlocked = isLessonUnlocked(l.id);
+      if (!unlocked) allDone = false;
+      var stars = lessonStars[l.id] || 0;
+      var starStr = '';
+      for (var i = 1; i <= 3; i++) starStr += (i <= stars ? '⭐' : '☆');
+      var cls = '';
+      if (stars >= 1) cls = ' completed';
+      else if (!unlocked) cls = ' locked';
+
+      var rightHtml = '';
+      if (!unlocked) rightHtml = '<span class="lc-lock">🔒</span>';
+      else if (stars >= 1) rightHtml = '<span class="lc-stars">' + starStr + '</span>';
+
+      cardsHtml +=
+        '<div class="lesson-card' + cls + '" data-action="openLesson" data-id="' + l.id + '">' +
+          '<span class="lc-icon">' + l.icon + '</span>' +
+          '<div class="lc-info">' +
+            '<h3>Lesson ' + l.id + ': ' + l.title + '</h3>' +
+            '<span class="lc-desc">' + l.desc + '</span>' +
+            (!unlocked ? '' : (stars === 0 ? '<span class="lc-desc" style="color:var(--teal)">Not started yet</span>' : '')) +
+          '</div>' +
+          rightHtml +
+        '</div>';
+    });
+
+    if (allDone && Object.keys(lessonStars).length >= 8) {
+      var totalStars = 0;
+      LESSONS.forEach(function(l) { totalStars += lessonStars[l.id] || 0; });
+      cardsHtml +=
+        '<div style="text-align:center;grid-column:1/-1;margin-top:8px">' +
+          '<div style="font-size:2rem;margin-bottom:4px">🌟</div>' +
+          '<p style="font-weight:700;color:var(--navy)">All 8 lessons complete! Total: ' + totalStars + '/24 ⭐</p>' +
+          '<button class="btn btn-primary" data-action="showUnitComplete" style="margin-top:8px">🎓 View Certificate</button>' +
+        '</div>';
+    }
+
+    render(
+      '<div class="screen active home-screen">' +
+        '<div class="home-header">' +
+          '<h1>🏫 My School Life</h1>' +
+          '<p>An interactive English course · 8 lessons · Tap a lesson to start!</p>' +
+        '</div>' +
+        '<div class="lesson-grid">' + cardsHtml + '</div>' +
+      '</div>'
+    );
+  }
+
+  // ==================== RENDER: SLIDES ====================
+  function showLessonSlide(lessonIdx, slideIdx) {
+    var l = LESSONS[lessonIdx];
+    var slides = l.slides;
+    var slide = slides[slideIdx];
+    currentLesson = lessonIdx;
+    currentSlide = slideIdx;
+    answered = false;
+    slideQuestionIdx = 0;
+    matchSelected = null;
+
+    updateTopBar('Lesson ' + l.id + ': ' + l.title);
+    updateBottomBar(slideIdx, slides.length);
+
+    var h = '';
+    h += '<div class="screen active"><div class="slide-card">';
+
+    // Progress dots
+    if (slides.length > 2) {
+      h += '<div class="progress-dots">';
+      slides.forEach(function(s, i) {
+        var dotCls = i < slideIdx ? 'done' : i === slideIdx ? 'current' : '';
+        h += '<div class="dot ' + dotCls + '"></div>';
+      });
+      h += '</div>';
+    }
+
+    switch (slide.type) {
+      case 'title':
+        h += renderTitleSlide(l, slide);
+        break;
+      case 'vocab':
+        h += renderVocabSlide(slide);
+        break;
+      case 'sentence':
+        h += renderSentenceSlide(slide);
+        break;
+      case 'mc':
+        h += renderMCSlide(slide);
+        break;
+      case 'fill':
+        h += renderFillSlide(slide);
+        break;
+      case 'match':
+        h += renderMatchSlide(slide);
+        break;
+      case 'sort':
+        h += renderSortSlide(slide);
+        break;
+      case 'complete':
+        h += renderCompleteSlide(l);
+        break;
+    }
+
+    h += '</div></div>';
+    render(h);
+
+    // Scroll to top
+    mainArea.scrollTop = 0;
+  }
+
+  function renderTitleSlide(l, slide) {
+    return '<div class="slide-header">' +
+      '<span class="step-badge">Lesson ' + l.id + '</span>' +
+      '<h2>' + slide.title + '</h2>' +
+      '<p>' + slide.text + '</p>' +
+      '</div>' +
+      '<div class="slide-body" style="align-items:center;justify-content:center;font-size:4rem">' + l.icon + '</div>';
+  }
+
+  function renderVocabSlide(slide) {
+    var h = '<div class="slide-header">' +
+      '<span class="step-badge">Vocabulary</span>' +
+      '<h2>' + slide.title + '</h2>' +
+      '<p>Tap 🔊 to hear each word</p>' +
+      '</div>' +
+      '<div class="slide-body"><div class="vocab-grid">';
+    slide.words.forEach(function(w) {
+      h += '<div class="vocab-item">' +
+        '<span class="v-emoji">' + w.emoji + '</span>' +
+        '<span class="v-word">' + w.word + '</span>' +
+        '<button class="btn-speak" data-action="sayWord" data-word="' + w.word.replace(/'/g, '&#39;') + '" title="Listen">🔊</button>' +
+      '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  function renderSentenceSlide(slide) {
+    var h = '<div class="slide-header">' +
+      '<span class="step-badge">Sentence Patterns</span>' +
+      '<h2>' + slide.title + '</h2></div>' +
+      '<div class="slide-body">';
+    slide.patterns.forEach(function(p) {
+      h += '<div class="sentence-box">' +
+        '<div class="s-en">' + p.en + ' <button class="btn-speak" data-action="saySentence" data-word="' + p.en.replace(/'/g, '&#39;').replace(/"/g, '&quot;') + '" style="display:inline-flex;width:30px;height:30px;font-size:0.8rem;vertical-align:middle">🔊</button></div>' +
+        '<div class="s-zh">' + p.zh + '</div>' +
+        (p.note ? '<div class="s-note">📌 ' + p.note + '</div>' : '') +
+      '</div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  function renderMCSlide(slide) {
+    var totalQ = slide.questions.length;
+    var h = '<div class="slide-header"><span class="step-badge">Practice</span><h2>' + slide.title + '</h2>' +
+      '<p style="font-size:0.8rem;color:var(--text-light)">Question ' + (slideQuestionIdx + 1) + ' of ' + totalQ + '</p></div>' +
+      '<div class="slide-body">';
+    h += '<div id="mcContainer">';
+    h += renderMCQuestion(slide, slideQuestionIdx);
+    h += '</div>';
+    h += '<div class="feedback-area" id="feedbackArea"></div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderMCQuestion(slide, qIdx) {
+    if (qIdx >= slide.questions.length) return '';
+    var q = slide.questions[qIdx];
+    var allOpts = q.options || [q.correct].concat((q.distractors || []).slice(0, 2));
+    if (allOpts.length < 3) {
+      var extras = ['science', 'math', 'art', 'music', 'PE', 'English', 'library', 'gym', 'cafeteria', 'tall', 'friendly', 'funny', 'kind'];
+      var pool = extras.filter(function(w) { return w !== q.correct && allOpts.indexOf(w) < 0; });
+      while (allOpts.length < 3 && pool.length > 0) { allOpts.push(pool.shift()); }
+    }
+    var opts = shuffle(allOpts).slice(0, 3);
+
+    return '<div class="practice-prompt">' +
+      '<span class="prompt-emoji">' + q.emoji + '</span>' +
+      '<span class="prompt-text">Which word matches this?</span>' +
+      '</div>' +
+      '<div class="options-row" id="mcOptions" data-qid="' + qIdx + '" data-correct="' + q.correct + '">' +
+      opts.map(function(w) {
+        return '<button class="opt-btn" data-action="pickMC" data-word="' + w + '">' + w + '</button>';
+      }).join('') +
+      '</div>';
+  }
+
+  function renderFillSlide(slide) {
+    var totalQ = slide.sentences.length;
+    var h = '<div class="slide-header"><span class="step-badge">Practice</span><h2>' + slide.title + '</h2>' +
+      '<p style="font-size:0.8rem;color:var(--text-light)">Question ' + (slideQuestionIdx + 1) + ' of ' + totalQ + '</p>' +
+      '<p>' + (slide.prompt || 'Complete the sentence.') + '</p></div>' +
+      '<div class="slide-body">';
+    h += '<div id="fillContainer">';
+    h += renderFillQuestion(slide, slideQuestionIdx);
+    h += '</div>';
+    h += '<div class="feedback-area" id="feedbackArea"></div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderFillQuestion(slide, qIdx) {
+    if (qIdx >= slide.sentences.length) return '';
+    var s = slide.sentences[qIdx];
+    var opts = shuffle(s.options).slice(0, 3);
+    return '<div class="practice-prompt">' +
+      '<span class="prompt-sentence">' + s.before + ' <span class="prompt-blank">______</span> ' + s.after + '</span>' +
+      '</div>' +
+      '<div class="options-row" id="fillOptions" data-qid="' + qIdx + '" data-correct="' + s.correct + '">' +
+      opts.map(function(w) {
+        return '<button class="opt-btn" data-action="pickFill" data-word="' + w + '">' + w + '</button>';
+      }).join('') +
+      '</div>';
+  }
+
+  function renderMatchSlide(slide) {
+    var h = '<div class="slide-header"><span class="step-badge">Practice</span><h2>' + slide.title + '</h2>' +
+      '<p>Click a situation, then click the matching phrase</p></div>' +
+      '<div class="slide-body">' +
+      '<div class="match-container">' +
+      '<div class="match-col" id="matchLeft">' +
+      shuffle(slide.left.slice()).map(function(item) {
+        return '<div class="match-item" data-action="selectMatch" data-side="left" data-id="' + item.id + '" data-matchid="' + item.id + '">' + item.emoji + ' ' + item.text + '</div>';
+      }).join('') +
+      '</div>' +
+      '<div class="match-col" id="matchRight">' +
+      shuffle(slide.right.slice()).map(function(item) {
+        return '<div class="match-item" data-action="selectMatch" data-side="right" data-id="' + item.id + '" data-matchid="' + item.matchId + '">' + item.text + '</div>';
+      }).join('') +
+      '</div>' +
+      '</div>' +
+      '<div class="feedback-area" id="feedbackArea"></div>' +
+      '<div id="matchScore" style="text-align:center;font-weight:700;color:var(--teal);min-height:22px;margin-top:8px"></div>' +
+      '</div>';
+    return h;
+  }
+
+  function renderSortSlide(slide) {
+    var h = '<div class="slide-header"><span class="step-badge">Practice</span><h2>' + slide.title + '</h2>' +
+      '<p>For each rule, choose: Must ✓ (required) or Mustn\'t ✗ (not allowed)</p></div>' +
+      '<div class="slide-body" id="sortContainer">';
+    slide.items.forEach(function(item, i) {
+      h += '<div class="sort-item" id="sortItem' + i + '">' +
+        '<span class="sort-text">' + item.text + '</span>' +
+        '<div class="sort-btns">' +
+          '<button class="sort-btn must-pick" data-action="sortPick" data-idx="' + i + '" data-choice="must" data-correct="' + item.correct + '">Must ✓</button>' +
+          '<button class="sort-btn mustnt-pick" data-action="sortPick" data-idx="' + i + '" data-choice="mustnt" data-correct="' + item.correct + '">Mustn\'t ✗</button>' +
+        '</div>' +
+      '</div>';
+    });
+    h += '<div class="feedback-area" id="feedbackArea"></div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderCompleteSlide(l) {
+    var results = getPracticeResults(l.id);
+    var correct = results.filter(function(r) { return r; }).length;
+    var total = results.length;
+    var stars = getStarsForScore(correct, total);
+
+    // Save stars
+    if (stars >= (lessonStars[l.id] || 0)) {
+      lessonStars[l.id] = stars;
+      lessonScores[l.id] = { correct: correct, total: total };
+    }
+
+    if (stars >= 2) fanfare();
+
+    var starHtml = '';
+    for (var i = 1; i <= 3; i++) starHtml += '<span class="star">' + (i <= stars ? '⭐' : '☆') + '</span>';
+    var msg = stars >= 2 ? 'Great Job! 🎉' : stars >= 1 ? 'Good Try! 👍' : 'Keep Practicing! 💪';
+
+    var nextLesson = currentLesson < LESSONS.length - 1 ? currentLesson + 1 : -1;
+
+    return '<div class="complete-screen" style="flex:1;display:flex;flex-direction:column">' +
+      '<div class="stars-display">' + starHtml + '</div>' +
+      '<h2>' + msg + '</h2>' +
+      '<p class="score-text">' + correct + ' / ' + total + ' correct</p>' +
+      (results.length === 0 ? '<p class="score-text" style="color:var(--text-light)">Complete the practice exercises to earn stars!</p>' : '') +
+      '<div class="btn-row">' +
+        '<button class="btn btn-primary" data-action="goHome">← Back to Lessons</button>' +
+        (nextLesson > 0 ? '<button class="btn btn-success" data-action="openLesson" data-id="' + (currentLesson + 2) + '">Next Lesson →</button>' : '') +
+      '</div>' +
+      '</div>';
+  }
+
+  function showUnitComplete() {
+    currentLesson = -2;
+    updateTopBar('');
+    bottomBar.style.display = 'none';
+    var totalStars = 0;
+    LESSONS.forEach(function(l) { totalStars += lessonStars[l.id] || 0; });
+    render(
+      '<div class="screen active unit-complete">' +
+        '<div class="trophy">🎓</div>' +
+        '<h2>Congratulations!</h2>' +
+        '<p style="font-size:1.1rem">You completed all 8 lessons of <strong>My School Life</strong>!</p>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:400px">' +
+          LESSONS.map(function(l) {
+            return '<div style="background:white;border-radius:12px;padding:10px;text-align:center">' +
+              '<div style="font-size:1.5rem">' + l.icon + '</div>' +
+              '<div style="font-size:0.7rem;font-weight:700;color:var(--navy)">' + l.title + '</div>' +
+              '<div>' + (lessonStars[l.id] ? '⭐'.repeat(lessonStars[l.id]) : '—') + '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        '<p style="font-weight:700;color:var(--navy);margin-top:8px">Total Stars: ' + totalStars + ' / 24 ⭐</p>' +
+        '<button class="btn btn-primary" data-action="resetAll">🔄 Start Over</button>' +
+        '<button class="btn btn-outline" data-action="goHome">← Back to Lessons</button>' +
+      '</div>'
+    );
+  }
+
+  // ==================== HELPERS ====================
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // ==================== EVENT DELEGATION ====================
+  mainArea.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    // Warm up speech engine on first user click (Chrome on Windows needs this)
+    warmUpSpeech();
+
+    // For match slides, we need to track which action to handle
+    var act = el.getAttribute('data-action');
+
+    switch (act) {
+      case 'openLesson':
+        var lid = Number(el.getAttribute('data-id'));
+        if (!isLessonUnlocked(lid)) return;
+        resetLessonState(lid);
+        showLessonSlide(lid - 1, 0);
+        break;
+
+      case 'goHome':
+        showHome();
+        break;
+
+      case 'showUnitComplete':
+        showUnitComplete();
+        break;
+
+      case 'resetAll':
+        lessonStars = {}; lessonScores = {}; lessonState = {};
+        showHome();
+        break;
+
+      case 'sayWord':
+        var w = el.getAttribute('data-word');
+        // Flash this button
+        el.classList.add('speaking');
+        setTimeout(function() { el.classList.remove('speaking'); }, 800);
+        say(w);
+        break;
+
+      case 'saySentence':
+        var sw = el.getAttribute('data-word');
+        el.classList.add('speaking');
+        setTimeout(function() { el.classList.remove('speaking'); }, 1200);
+        say(sw);
+        break;
+
+      case 'pickMC':
+        if (answered) return;
+        handleMC(el);
+        break;
+
+      case 'pickFill':
+        if (answered) return;
+        handleFill(el);
+        break;
+
+      case 'selectMatch':
+        handleMatchSelection(el);
+        break;
+
+      case 'sortPick':
+        handleSortPick(el);
+        break;
+
+      case 'prevSlide':
+        if (currentSlide > 0) {
+          showLessonSlide(currentLesson, currentSlide - 1);
+        }
+        break;
+
+      case 'nextSlide':
+        advanceSlide();
+        break;
+    }
+  });
+
+  // ==================== PRACTICE HANDLERS ====================
+  function handleMC(el) {
+    var correct = el.parentElement.getAttribute('data-correct');
+    var chosen = el.getAttribute('data-word');
+    var fb = document.getElementById('feedbackArea');
+    var isCorrect = chosen === correct;
+
+    // Highlight buttons
+    var btns = el.parentElement.querySelectorAll('.opt-btn');
+    btns.forEach(function(b) {
+      b.classList.add('disabled');
+      if (b.getAttribute('data-word') === correct) b.classList.add('correct');
+      if (b === el && !isCorrect) b.classList.add('wrong');
+    });
+
+    addPracticeResult(currentLesson + 1, isCorrect);
+
+    if (isCorrect) {
+      ding();
+      if (fb) { fb.className = 'feedback-area good'; fb.innerHTML = '✓ Correct! 🎉'; }
+    } else {
+      buzz();
+      if (fb) { fb.className = 'feedback-area ops'; fb.innerHTML = '✗ The answer is: <strong>' + correct + '</strong>'; }
+      say(correct);
+    }
+
+    // Auto-advance to next question or mark slide complete
+    var slide = LESSONS[currentLesson].slides[currentSlide];
+    var totalQ = slide.questions ? slide.questions.length : 0;
+    if (slideQuestionIdx + 1 < totalQ) {
+      answered = false;
+      setTimeout(function() {
+        slideQuestionIdx++;
+        var container = document.getElementById('mcContainer');
+        var fb2 = document.getElementById('feedbackArea');
+        if (container && fb2) {
+          container.innerHTML = renderMCQuestion(slide, slideQuestionIdx);
+          fb2.className = 'feedback-area';
+          fb2.innerHTML = '';
+        }
+      }, 1200);
+    } else {
+      answered = true;
+    }
+  }
+
+  function handleFill(el) {
+    var correct = el.parentElement.getAttribute('data-correct');
+    var chosen = el.getAttribute('data-word');
+    var fb = document.getElementById('feedbackArea');
+    var isCorrect = chosen === correct;
+
+    var btns = el.parentElement.querySelectorAll('.opt-btn');
+    btns.forEach(function(b) {
+      b.classList.add('disabled');
+      if (b.getAttribute('data-word') === correct) b.classList.add('correct');
+      if (b === el && !isCorrect) b.classList.add('wrong');
+    });
+
+    addPracticeResult(currentLesson + 1, isCorrect);
+
+    if (isCorrect) {
+      ding();
+      if (fb) { fb.className = 'feedback-area good'; fb.innerHTML = '✓ Perfect! 🎉'; }
+    } else {
+      buzz();
+      if (fb) { fb.className = 'feedback-area ops'; fb.innerHTML = '✗ The answer is: <strong>' + correct + '</strong>'; }
+      say(correct);
+    }
+
+    // Auto-advance to next question or mark slide complete
+    var slide = LESSONS[currentLesson].slides[currentSlide];
+    var totalQ = slide.sentences ? slide.sentences.length : 0;
+    if (slideQuestionIdx + 1 < totalQ) {
+      answered = false;
+      setTimeout(function() {
+        slideQuestionIdx++;
+        var container = document.getElementById('fillContainer');
+        var fb2 = document.getElementById('feedbackArea');
+        if (container && fb2) {
+          container.innerHTML = renderFillQuestion(slide, slideQuestionIdx);
+          fb2.className = 'feedback-area';
+          fb2.innerHTML = '';
+        }
+      }, 1200);
+    } else {
+      answered = true;
+    }
+  }
+
+  // Match handling
+  var matchSelected = null; // {side, id, matchId, el}
+
+  function handleMatchSelection(el) {
+    var side = el.getAttribute('data-side');
+    var id = el.getAttribute('data-id');
+    var matchId = el.getAttribute('data-matchid');
+
+    // If already matched, ignore
+    if (el.classList.contains('matched')) return;
+
+    // Clear previous wrong-flash
+    document.querySelectorAll('.match-item.wrong-flash').forEach(function(m) { m.classList.remove('wrong-flash'); });
+
+    // If nothing selected yet, select this
+    if (!matchSelected) {
+      matchSelected = { side: side, id: id, matchId: matchId, el: el };
+      el.classList.add('selected');
+      return;
+    }
+
+    // If clicking same item, deselect
+    if (matchSelected.side === side && matchSelected.id === id) {
+      el.classList.remove('selected');
+      matchSelected = null;
+      return;
+    }
+
+    // If clicking same side but different item, switch selection
+    if (matchSelected.side === side) {
+      matchSelected.el.classList.remove('selected');
+      matchSelected = { side: side, id: id, matchId: matchId, el: el };
+      el.classList.add('selected');
+      return;
+    }
+
+    // Two different sides selected — check match
+    var leftItem, rightItem;
+    if (matchSelected.side === 'left') { leftItem = matchSelected; rightItem = { side: side, id: id, matchId: matchId, el: el }; }
+    else { rightItem = matchSelected; leftItem = { side: side, id: id, matchId: matchId, el: el }; }
+
+    // matchId of right must equal id of left
+    var isMatch = (rightItem.matchId === leftItem.id);
+
+    if (isMatch) {
+      leftItem.el.classList.remove('selected');
+      leftItem.el.classList.add('matched');
+      rightItem.el.classList.add('matched');
+      matchSelected = null;
+      ding();
+      addPracticeResult(currentLesson + 1, true);
+
+      // Check if all matched
+      var totalLeft = document.querySelectorAll('#matchLeft .match-item').length;
+      var matchedLeft = document.querySelectorAll('#matchLeft .match-item.matched').length;
+      var scoreEl = document.getElementById('matchScore');
+      if (scoreEl) scoreEl.textContent = 'Matched: ' + matchedLeft + ' / ' + totalLeft;
+      if (matchedLeft >= totalLeft) {
+        var fb = document.getElementById('feedbackArea');
+        if (fb) { fb.className = 'feedback-area good'; fb.innerHTML = '✓ All matched! Great job! 🎉'; }
+        answered = true;
+      }
+    } else {
+      leftItem.el.classList.remove('selected');
+      leftItem.el.classList.add('wrong-flash');
+      rightItem.el.classList.add('wrong-flash');
+      matchSelected = null;
+      buzz();
+      addPracticeResult(currentLesson + 1, false);
+      setTimeout(function() {
+        leftItem.el.classList.remove('wrong-flash');
+        rightItem.el.classList.remove('wrong-flash');
+      }, 500);
+    }
+  }
+
+  // Sort handling
+  function handleSortPick(el) {
+    var idx = Number(el.getAttribute('data-idx'));
+    var choice = el.getAttribute('data-choice');
+    var correct = el.getAttribute('data-correct');
+    var isCorrect = (choice === correct);
+
+    // Disable all buttons in this row
+    var row = document.getElementById('sortItem' + idx);
+    if (!row) return;
+    var btns = row.querySelectorAll('.sort-btn');
+    btns.forEach(function(b) {
+      b.disabled = true;
+      if (b.getAttribute('data-choice') === correct) b.classList.add('chosen-correct');
+      if (b === el && !isCorrect) b.classList.add('chosen-wrong');
+    });
+
+    addPracticeResult(currentLesson + 1, isCorrect);
+
+    if (isCorrect) {
+      ding();
+    } else {
+      buzz();
+    }
+
+    // Check if all sorted
+    var totalItems = document.querySelectorAll('#sortContainer .sort-item').length;
+    var answeredItems = document.querySelectorAll('#sortContainer .sort-btn:disabled').length / 2;
+    if (answeredItems >= totalItems) {
+      var results = getPracticeResults(currentLesson + 1);
+      var sortResults = results.slice(-6); // last 6 results
+      var correctCount = sortResults.filter(function(r) { return r; }).length;
+      var fb = document.getElementById('feedbackArea');
+      if (fb) {
+        fb.className = 'feedback-area ' + (correctCount >= 4 ? 'good' : 'ops');
+        fb.innerHTML = 'Score: ' + correctCount + ' / ' + totalItems + (correctCount >= 4 ? ' ✓' : '');
+      }
+      answered = true;
+    }
+  }
+
+  // ==================== SLIDE NAVIGATION ====================
+  function advanceSlide() {
+    var l = LESSONS[currentLesson];
+    var slide = l.slides[currentSlide];
+    var isLastSlide = currentSlide >= l.slides.length - 1;
+
+    // On practice slides (mc, fill, match, sort), require answering first
+    var practiceTypes = ['mc', 'fill', 'match', 'sort'];
+    if (practiceTypes.indexOf(slide.type) >= 0 && !answered) {
+      // Flash feedback area to prompt answer
+      var fb = document.getElementById('feedbackArea');
+      if (fb) {
+        fb.className = 'feedback-area ops';
+        fb.innerHTML = 'Please answer before continuing!';
+        setTimeout(function() { if (fb.innerHTML === 'Please answer before continuing!') fb.innerHTML = ''; }, 1500);
+      }
+      return;
+    }
+
+    if (isLastSlide) {
+      showHome();
+    } else {
+      showLessonSlide(currentLesson, currentSlide + 1);
+    }
+  }
+
+  // Add Next button click handler via bottom bar
+  document.getElementById('bottomBar').addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var act = el.getAttribute('data-action');
+    if (act === 'prevSlide') {
+      if (currentSlide > 0) showLessonSlide(currentLesson, currentSlide - 1);
+    } else if (act === 'nextSlide') {
+      advanceSlide();
+    }
+  });
+
+  // Top bar home button
+  document.getElementById('topBar').addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    if (el.getAttribute('data-action') === 'goHome') showHome();
+  });
+
+  // ==================== KEYBOARD NAVIGATION ====================
+  document.addEventListener('keydown', function(e) {
+    if (currentLesson < 0) return; // On home screen
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      advanceSlide();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (currentSlide > 0) showLessonSlide(currentLesson, currentSlide - 1);
+    }
+  });
+
+  // ==================== INIT ====================
+  showHome();
+})();
+</script>
+</body>
+</html>
