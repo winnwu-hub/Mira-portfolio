@@ -1,10 +1,10 @@
-# Mia · Learning Designer Portfolio
+# Mira · Learning Designer Portfolio
 
 Interactive courseware portfolio for Learning Designer roles at AI/tool-based online education companies.
 
 ## 🚀 Live Demo
 
-**[View Portfolio →](https://winnwu-hub.github.io/ld-portfolio/)**
+**[View Portfolio →](https://winnwu-hub.github.io/Mira-portfolio/)**
 
 ## 📂 Cases
 
@@ -44,5 +44,5 @@ All cases are built as **single-file HTML/CSS/JS** prototypes — no dependencie
 
 ## 👤 About
 
-Mia — English & Japanese teacher, Learning Designer.  
+Mira — English & Japanese teacher, Learning Designer.  
 Targeting LD roles at companies like Duolingo, Baicizhan, Liulishuo.
