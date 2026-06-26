@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrammarPath — Adaptive Grammar Learning</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f172a; color: #1e293b;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; padding: 20px;
+}
+#app {
+  width: 100%; max-width: 760px; min-height: 580px;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  overflow: hidden; position: relative;
+}
+.slide { display: none; padding: 36px 40px; min-height: 580px; flex-direction: column; }
+.slide.active { display: flex; }
+.slide.dark { background: linear-gradient(160deg, #0f172a, #1e3a5f); color: #fff; text-align: center; align-items: center; justify-content: center; }
+.slide.light { background: #f8fafc; }
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; background: #fff; border-bottom: 1px solid #e2e8f0;
+  margin: -36px -40px 24px -40px;
+}
+.topbar .back { font-size: 13px; color: #475569; cursor: pointer; border: none; background: none; font-family: inherit; }
+.topbar .back:hover { color: #2563eb; }
+.topbar .title { font-size: 14px; font-weight: 600; }
+.topbar .step { font-size: 12px; color: #94a3b8; }
+
+/* Buttons */
+.btn {
+  display: inline-block; padding: 12px 32px; font-size: 15px; font-weight: 600;
+  border: none; border-radius: 30px; cursor: pointer; font-family: inherit;
+  transition: all 0.2s; text-align: center;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+.btn-primary:hover { background: #1d4ed8; box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+.btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-outline { background: #fff; color: #2563eb; border: 2px solid #2563eb; }
+.btn-outline:hover { background: #eff6ff; }
+.btn-sm { padding: 8px 18px; font-size: 13px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn:disabled:hover { transform: none; box-shadow: none; }
+.btn-success { background: #16a34a; color: #fff; }
+.btn-warning { background: #d97706; color: #fff; }
+
+/* Welcome */
+.w-icon { font-size: 56px; margin-bottom: 8px; }
+.w-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+.w-sub { font-size: 15px; color: #93c5fd; margin-bottom: 20px; }
+.w-intro {
+  max-width: 500px; background: rgba(255,255,255,0.07);
+  border-radius: 12px; padding: 18px 24px; margin-bottom: 20px;
+  font-size: 13px; color: #cbd5e1; line-height: 1.7; text-align: left;
+}
+.w-intro strong { color: #60a5fa; }
+.w-features { list-style: none; font-size: 13px; color: #94a3b8; display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+.w-features li::before { content: '✓ '; color: #34d399; font-weight: 700; }
+
+/* Diagnostic */
+.diag-card {
+  background: #fff; border-radius: 14px; padding: 28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px;
+}
+.diag-dim { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+.diag-q { font-size: 18px; font-weight: 600; margin-bottom: 18px; line-height: 1.5; }
+.diag-counter { font-size: 12px; color: #94a3b8; text-align: center; margin-bottom: 4px; }
+.opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opt-btn {
+  padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 12px;
+  background: #fff; cursor: pointer; font-family: inherit; font-size: 14px;
+  transition: all 0.15s; text-align: center; color: #1e293b;
+}
+.opt-btn:hover { border-color: #2563eb; background: #eff6ff; }
+.opt-btn:active { transform: scale(0.98); }
+
+/* Report */
+.radar-wrap { text-align: center; margin-bottom: 16px; }
+.radar-wrap svg { max-width: 300px; }
+.report-table { width: 100%; margin-bottom: 16px; border-collapse: collapse; font-size: 13px; }
+.report-table td { padding: 8px 10px; border-top: 1px solid #f1f5f9; }
+.report-table td:first-child { font-weight: 600; }
+.report-table .rt-score { font-weight: 700; text-align: right; }
+.report-table .rt-badge { text-align: right; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 8px; }
+
+/* Path map */
+.path-list { display: flex; flex-direction: column; gap: 10px; }
+.path-card {
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  border-radius: 12px; background: #fff; border: 2px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.path-card.active { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.path-card.skipped { opacity: 0.5; background: #f8fafc; }
+.path-card.completed { border-color: #16a34a; background: #f0fdf4; }
+.path-num { font-size: 20px; font-weight: 700; min-width: 36px; text-align: center; }
+.path-detail { flex: 1; }
+.path-detail .pd-name { font-size: 14px; font-weight: 600; }
+.path-detail .pd-desc { font-size: 11px; color: #64748b; }
+.path-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 10px; white-space: nowrap; }
+
+/* Module learning */
+.mod-phase { text-align: center; margin-bottom: 12px; }
+.mod-phase .mp-label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+.mod-explain { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.7; }
+.mod-examples { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.mod-ex {
+  flex: 1; min-width: 200px; padding: 12px 16px; border-radius: 10px; font-size: 12px;
+}
+.mod-ex.wrong { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.mod-ex.right { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+.mod-q-box { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.mod-feedback {
+  margin-top: 12px; padding: 12px 16px; border-radius: 10px; font-size: 13px; display: none;
+}
+.mod-feedback.correct { display: block; background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+.mod-feedback.wrong { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.remedial-box {
+  background: #fffbeb; border: 2px solid #fde68a; border-radius: 14px; padding: 20px; margin: 14px 0;
+}
+.remedial-box .rem-title { font-size: 14px; font-weight: 700; color: #d97706; margin-bottom: 8px; }
+
+/* Mastery */
+.mastery-header { text-align: center; margin-bottom: 20px; }
+.mastery-header .mh-emoji { font-size: 48px; }
+.mastery-header .mh-grade { font-size: 26px; font-weight: 700; margin: 4px 0; }
+.mastery-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.mastery-card {
+  flex: 1; min-width: 140px; background: #fff; border-radius: 14px;
+  padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.mastery-card .mc-val { font-size: 36px; font-weight: 700; }
+.mastery-card .mc-label { font-size: 12px; color: #64748b; }
+
+/* Helpers */
+.text-center { text-align: center; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.flex-center { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.dot-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.dot-row .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; }
+.dot-row .dot.on { background: #2563eb; }
+.dot-row .dot.done { background: #93c5fd; }
+.dot-row .dot.skip { background: #bbf7d0; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.tag-hi { background: #fef2f2; color: #dc2626; }
+.tag-ok { background: #fffbeb; color: #d97706; }
+.tag-good { background: #f0fdf4; color: #16a34a; }
+.tag-skip { background: #f0fdf4; color: #16a34a; }
+
+@media (max-width: 640px) {
+  .slide { padding: 24px 20px; }
+  .topbar { margin: -24px -20px 16px -20px; }
+  .opt-grid { grid-template-columns: 1fr; }
+  .mastery-summary { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ====== SLIDE 0: WELCOME ====== -->
+<div class="slide dark active" id="s0">
+  <div class="w-icon">🧭</div>
+  <h1 class="w-title">GrammarPath</h1>
+  <p class="w-sub">Adaptive Grammar Learning</p>
+  <div class="w-intro">
+    <strong>Not all grammar gaps are the same.</strong> GrammarPath diagnoses your specific weak points across 6 key dimensions, then builds a <strong>personalized learning path</strong> — skipping what you already know, prioritizing what you need most.<br><br>
+    The path <strong>adapts in real time</strong>: ace a module and fast-track through it. Struggle? Get extra support.
+  </div>
+  <ul class="w-features">
+    <li>12-question diagnostic</li>
+    <li>6 grammar dimensions</li>
+    <li>Real-time path adjustment</li>
+    <li>Personalized mastery report</li>
+  </ul>
+  <button class="btn btn-primary" onclick="startDiag()">Start Diagnostic Test 📝</button>
+</div>
+
+<!-- ====== SLIDE 1: DIAGNOSTIC TEST ====== -->
+<div class="slide light" id="s-diag">
+  <div class="topbar">
+    <button class="back" onclick="showSlide('s0')">← Back</button>
+    <span class="title">📝 Diagnostic Test</span>
+    <span class="step" id="diagProgress">1 / 12</span>
+  </div>
+  <div class="diag-card">
+    <span class="diag-dim" id="diagDimTag" style="background:#eff6ff;color:#2563eb;"></span>
+    <div class="diag-q" id="diagQuestion"></div>
+    <div class="opt-grid" id="diagOptions"></div>
+  </div>
+  <div class="diag-counter">Answer honestly — this helps build your personalized path</div>
+</div>
+
+<!-- ====== SLIDE 2: DIAGNOSTIC REPORT ====== -->
+<div class="slide light" id="s-report">
+  <div class="topbar">
+    <button class="back" onclick="resetAll()">↩ Retake</button>
+    <span class="title">📊 Your Diagnostic Report</span>
+    <span></span>
+  </div>
+  <div class="radar-wrap" id="radarWrap"></div>
+  <table class="report-table" id="reportTable"></table>
+  <div class="text-center"><button class="btn btn-primary" onclick="renderPath()">View My Learning Path →</button></div>
+</div>
+
+<!-- ====== SLIDE 3: LEARNING PATH MAP ====== -->
+<div class="slide light" id="s-path">
+  <div class="topbar">
+    <button class="back" onclick="showSlide('s-report')">← Report</button>
+    <span class="title">🗺️ Your Learning Path</span>
+    <span></span>
+  </div>
+  <p style="font-size:13px;color:#64748b;margin-bottom:16px;" id="pathSummary"></p>
+  <div class="path-list" id="pathList"></div>
+  <div class="text-center mt-20">
+    <button class="btn btn-primary" id="btnStartPath" onclick="startPath()">Start Learning →</button>
+  </div>
+</div>
+
+<!-- ====== SLIDE 4: MODULE LEARNING ====== -->
+<div class="slide light" id="s-learn">
+  <div class="topbar">
+    <button class="back" onclick="backToPath()">← Path</button>
+    <span class="title" id="learnTitle"></span>
+    <span class="step" id="learnStep"></span>
+  </div>
+  <div id="learnPhase1">
+    <div class="mod-phase"><div class="mp-label" id="phaseLabel">STEP 1: Understand</div></div>
+    <div class="mod-explain" id="modExplain"></div>
+    <div class="mod-examples" id="modExamples"></div>
+    <div class="text-center mt-20">
+      <button class="btn btn-primary" id="btnToPractice" onclick="startPractice()">Start Practice →</button>
+    </div>
+  </div>
+  <div id="learnPhase2" style="display:none;">
+    <div class="mod-phase"><div class="mp-label">STEP 2: Practice</div></div>
+    <div class="mod-q-box">
+      <div class="diag-q" id="modQuestion" style="font-size:16px;"></div>
+      <div class="opt-grid" id="modOptions"></div>
+      <div class="mod-feedback" id="modFeedback"></div>
+    </div>
+    <div class="remedial-box" id="remedialBox" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ====== SLIDE 5: MASTERY DASHBOARD ====== -->
+<div class="slide light" id="s-mastery">
+  <div class="topbar">
+    <button class="back" onclick="resetAll()">↩ Retake All</button>
+    <span class="title">🏆 Mastery Dashboard</span>
+    <span></span>
+  </div>
+  <div class="mastery-header" id="masteryHeader"></div>
+  <div class="mastery-summary" id="masterySummary"></div>
+  <table class="report-table mb-16" id="masteryTable"></table>
+  <div class="mod-explain" id="masteryInsight" style="text-align:center;"></div>
+  <div class="flex-center mt-20">
+    <button class="btn btn-secondary btn-sm" onclick="resetAll()">🔁 Retake Diagnostic</button>
+    <button class="btn btn-primary btn-sm" onclick="showSlide('s-path')">🗺️ View Path</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ============================================================
+// DATA: 6 Grammar Dimensions
+// ============================================================
+var DIMS = [
+  {id:0, name:'Tenses', cn:'时态', icon:'⏰', color:'#2563eb', err:'I have went', fix:'I have gone', desc:'Past, Present Perfect, Past Perfect'},
+  {id:1, name:'Prepositions', cn:'介词', icon:'📍', color:'#7c3aed', err:'in Monday', fix:'on Monday', desc:'Time, place, and fixed pairs (depend on)'},
+  {id:2, name:'Articles', cn:'冠词', icon:'📎', color:'#d97706', err:'I am teacher', fix:'I am a teacher', desc:'A/an, the, and zero article'},
+  {id:3, name:'Agreement', cn:'主谓一致', icon:'⚖️', color:'#dc2626', err:'She go', fix:'She goes', desc:'Subject-verb, indefinite pronouns'},
+  {id:4, name:'Modals', cn:'情态动词', icon:'🔑', color:'#0891b2', err:'You must to go', fix:'You must go', desc:'Must, should, can, obligation vs. advice'},
+  {id:5, name:'Clauses', cn:'从句', icon:'🔗', color:'#7c3aed', err:'I don\'t know what is it', fix:'I don\'t know what it is', desc:'Relative clauses, embedded questions'}
+];
+
+// ============================================================
+// DATA: Diagnostic Questions (12 total, 2 per dimension)
+// ============================================================
+var DIAG = [
+  {dim:0, q:'I _____ to the store yesterday.', opts:['went','go','was going','have gone'], ans:0},
+  {dim:0, q:'She _____ English since 2019.', opts:['learns','learned','has been learning','is learning'], ans:2},
+  {dim:1, q:'The meeting is _____ Monday.', opts:['in','on','at','for'], ans:1},
+  {dim:1, q:'I\'m interested _____ learning Japanese.', opts:['in','at','on','for'], ans:0},
+  {dim:2, q:'He is _____ honest man.', opts:['a','an','the','no article'], ans:1},
+  {dim:2, q:'_____ sun rises in the east.', opts:['A','An','The','No article'], ans:2},
+  {dim:3, q:'Everybody _____ happy with the result.', opts:['are','were','was','have been'], ans:2},
+  {dim:3, q:'Neither the teacher nor the students _____ ready.', opts:['was','is','has been','were'], ans:3},
+  {dim:4, q:'You _____ finish this today. There\'s no deadline.', opts:['mustn\'t','can\'t','shouldn\'t','don\'t have to'], ans:3},
+  {dim:4, q:'I _____ swim when I was five.', opts:['can','may','could','would'], ans:2},
+  {dim:5, q:'The woman _____ lives next door is a doctor.', opts:['which','who','what','where'], ans:1},
+  {dim:5, q:'I don\'t know _____.', opts:['what does he want','what he wants','what he want','what wants he'], ans:1}
+];
+
+// ============================================================
+// DATA: Module Content (6 modules with explanation + questions)
+// ============================================================
+var MODULES = [
+  { // 0 - Tenses
+    dim:0,
+    title:'English Tenses',
+    explain:'English has 12 tenses, but most daily conversation uses only 5-6. The most common errors happen when learners mix past/present forms or forget helping verbs. Key rule: use <strong>Past Simple</strong> for finished actions (I went), <strong>Present Perfect</strong> for actions with present relevance (I have lost my keys), and <strong>Past Perfect</strong> for actions BEFORE another past action (the movie had already started).',
+    examples:[
+      {w:'I have went there.', r:'I have gone there.'},
+      {w:'She is working here since 2019.', r:'She has been working here since 2019.'}
+    ],
+    questions:[
+      {q:'By the time we arrived, the movie _____.', opts:['already started','has already started','had already started','was already starting'], ans:2, expl:'Past Perfect: the movie started BEFORE we arrived (two past events, one before the other).'},
+      {q:'He _____ in this company for 10 years.', opts:['works','is working','has been working','worked'], ans:2, expl:'Present Perfect Continuous: action started in the past and continues NOW — "for 10 years" is the clue.'},
+      {q:'When I was a child, I _____ to the beach every summer.', opts:['go','have gone','was going','went'], ans:3, expl:'Past Simple for a past habit — "When I was a child" signals a finished time period.'},
+      {q:'I _____ my keys. I can\'t find them anywhere.', opts:['lost','have lost','was losing','had lost'], ans:1, expl:'Present Perfect: the lost keys affect the PRESENT (can\'t find them now).'}
+    ],
+    remedial:{
+      explain:'Let\'s simplify. The three most important tenses: <strong>Past Simple</strong> — finished action with clear time (yesterday, last week); <strong>Present Perfect</strong> — past action with present result (already, just, yet); <strong>Past Perfect</strong> — the "past of the past," for when two things happened at different times.',
+      questions:[
+        {q:'She _____ her homework already.', opts:['finished','was finishing','has finished','had finished'], ans:2, expl:'"Already" signals Present Perfect — the homework is done NOW.'},
+        {q:'When I got to the station, the train _____.', opts:['left','has left','had left','was left'], ans:2, expl:'The train left BEFORE you arrived = Past Perfect (past of the past).'}
+      ]
+    }
+  },
+  { // 1 - Prepositions
+    dim:1,
+    title:'Prepositions of Time & Place',
+    explain:'Prepositions rarely translate directly from Chinese. The three most important rules: <strong>(1) Time</strong> — "on" for days/dates (on Monday), "in" for months/years/parts of day (in July, in the morning), "at" for specific times (at 3pm); <strong>(2) Place</strong> — "at" for points, "in" for enclosed spaces, "on" for surfaces; <strong>(3) Fixed pairs</strong> — many adjectives and verbs require specific prepositions (interested <em>in</em>, depend <em>on</em>, good <em>at</em>, worried <em>about</em>).',
+    examples:[
+      {w:'The meeting is in Monday.', r:'The meeting is on Monday.'},
+      {w:'It depends in the weather.', r:'It depends on the weather.'}
+    ],
+    questions:[
+      {q:'We arrived _____ the airport at 6pm.', opts:['in','on','at','to'], ans:2, expl:'We "arrive at" a specific location (the airport is a point on the journey).'},
+      {q:'She is really good _____ math.', opts:['in','on','at','for'], ans:2, expl:'Fixed pair: "good at" — treat it as one word. Good at + noun/gerund.'},
+      {q:'I\'ll see you _____ Friday morning.', opts:['in','on','at','for'], ans:1, expl:'"On" for days (Friday), even when combined with "morning."'},
+      {q:'He is afraid _____ making mistakes.', opts:['of','for','at','in'], ans:0, expl:'Fixed pair: "afraid of" — always "of" after afraid.'}
+    ],
+    remedial:{
+      explain:'Think of time like a calendar: <strong>ON</strong> touches a day (on Friday), <strong>IN</strong> is inside a month/year (in June), <strong>AT</strong> is a point on the clock (at 7pm). For adjective+preposition pairs, treat them as ONE word — learn "good at" together, never separately.',
+      questions:[
+        {q:'The concert starts _____ 7:30 sharp.', opts:['in','on','at','for'], ans:2, expl:'Specific time = "at." Think of the clock: at 7:30, at noon, at midnight.'},
+        {q:'She apologized _____ being late.', opts:['at','for','in','on'], ans:1, expl:'Fixed pair: "apologize for" + gerund. Always "for" after apologize.'}
+      ]
+    }
+  },
+  { // 2 - Articles
+    dim:2,
+    title:'Articles: A/An, The, and Zero',
+    explain:'English articles are especially hard for Chinese speakers because Chinese doesn\'t use them the same way. Three key rules: <strong>(1) A/An</strong> — use before singular countable nouns mentioned for the first time (a teacher). Use "an" before vowel <em>sounds</em> (an hour, an honest man); <strong>(2) The</strong> — use when both speaker and listener know WHICH one (the sun, the door — only one exists in context); <strong>(3) No article</strong> — use for general plural/uncountable nouns (Teachers work hard, I like music).',
+    examples:[
+      {w:'He is teacher.', r:'He is a teacher.'},
+      {w:'Sun rises in east.', r:'The sun rises in the east.'}
+    ],
+    questions:[
+      {q:'She wants to be _____ engineer.', opts:['a','an','the','no article'], ans:1, expl:'"Engineer" starts with a vowel sound (/ɛ/), so use "an".'},
+      {q:'_____ water in this bottle is not clean.', opts:['A','An','The','No article'], ans:2, expl:'Specific water (the one in THIS bottle) = "The". Both people know which water.'},
+      {q:'I love _____ dogs. They are so friendly.', opts:['a','an','the','no article'], ans:3, expl:'General statement about all dogs = no article. Plural general nouns don\'t need articles.'},
+      {q:'Can you close _____ door, please?', opts:['a','an','the','no article'], ans:2, expl:'Only one door in context (the room you\'re in) = "The".'}
+    ],
+    remedial:{
+      explain:'Ask yourself: <strong>"Does the listener know WHICH ONE I mean?"</strong> If yes → "the". If it\'s one of many, first time mentioned → "a/an". If it\'s a general concept or all of something → no article. Use "an" when the next word starts with a vowel SOUND (an apple, an hour, an MBA).',
+      questions:[
+        {q:'He ate _____ apple for breakfast.', opts:['a','an','the','no article'], ans:1, expl:'One apple, first mention, starts with vowel sound = "an".'},
+        {q:'_____ moon looks beautiful tonight.', opts:['A','An','The','No article'], ans:2, expl:'Only one moon = always "the moon." Both speaker and listener know which one.'}
+      ]
+    }
+  },
+  { // 3 - Agreement
+    dim:3,
+    title:'Subject-Verb Agreement',
+    explain:'Subject-verb agreement means the verb form must match the subject. Common traps for Chinese learners: <strong>(1) Third-person singular "s"</strong> — He goes (NOT He go); <strong>(2) Indefinite pronouns</strong> — everybody/somebody/nobody are SINGULAR (Everybody IS happy, NOT are); <strong>(3) Neither...nor / Either...or</strong> — the verb agrees with the subject CLOSEST to it (Neither the teacher nor the students WERE ready); <strong>(4) Uncountable nouns</strong> — news, information, advice are singular (The news IS good).',
+    examples:[
+      {w:'She go to school every day.', r:'She goes to school every day.'},
+      {w:'Everybody are happy.', r:'Everybody is happy.'}
+    ],
+    questions:[
+      {q:'Each of the students _____ a book.', opts:['have','has','are having','were having'], ans:1, expl:'"Each" is singular — the real subject is "each", not "students".'},
+      {q:'Either my parents or my sister _____ coming.', opts:['are','is','were','have been'], ans:1, expl:'With "either...or", the verb matches the CLOSEST subject ("my sister" = singular → is).'},
+      {q:'The news _____ surprising.', opts:['are','were','have been','is'], ans:3, expl:'"News" is uncountable and singular, even though it ends in -s.'},
+      {q:'There _____ many reasons to learn English.', opts:['is','was','has','are'], ans:3, expl:'The real subject is "reasons" (plural) — "There" is just a placeholder.'}
+    ],
+    remedial:{
+      explain:'The main rule: <strong>find the REAL subject first, then match</strong>. Ignore words between subject and verb. "The list of items IS on the desk" (list = singular, ignore "of items"). "Everybody" and "someone" are ALWAYS singular. With "neither...nor", look at the word right before the verb.',
+      questions:[
+        {q:'Someone _____ left their bag here.', opts:['have','has','are','were'], ans:1, expl:'"Someone" is always singular = has. (Someone has, everybody is, nobody knows.)'},
+        {q:'The quality of these products _____ excellent.', opts:['are','is','were','have been'], ans:1, expl:'Real subject = "quality" (singular). Ignore "of these products" — it\'s a distraction.'}
+      ]
+    }
+  },
+  { // 4 - Modals
+    dim:4,
+    title:'Modal Verbs: Must, Should, Can & More',
+    explain:'Modal verbs express ability, permission, obligation, or possibility. Key rules: <strong>(1) No "to" after modals</strong> — You must go (NOT must to go), She can swim (NOT can to swim); <strong>(2) Must vs. Have to</strong> — "Must" = obligation from the SPEAKER, "Have to" = obligation from outside RULES; <strong>(3) Mustn\'t vs. Don\'t have to</strong> — "Mustn\'t" = PROHIBITED (NOT allowed), "Don\'t have to" = OPTIONAL (no obligation). These are very different! <strong>(4) Could</strong> = past ability (I could swim at age 5).',
+    examples:[
+      {w:'You must to finish this.', r:'You must finish this.'},
+      {w:'You mustn\'t come. (It\'s optional.)', r:'You don\'t have to come. (It\'s optional.)'}
+    ],
+    questions:[
+      {q:'You _____ smoke here. It\'s illegal.', opts:['don\'t have to','shouldn\'t','couldn\'t','mustn\'t'], ans:3, expl:'Illegal = prohibited = mustn\'t. "Mustn\'t" means NOT allowed.'},
+      {q:'We _____ be at the airport by 8. The flight leaves at 10.', opts:['must','can','may','would'], ans:1, expl:'"Must" = strong obligation. Missing the flight is a real consequence.'},
+      {q:'He _____ play piano when he was four.', opts:['can','may','should','could'], ans:3, expl:'Past ability = "could." He had this skill at age four.'},
+      {q:'She _____ be at home. Her lights are on.', opts:['must','can\'t','should','would'], ans:0, expl:'"Must" for logical deduction (I\'m 95% sure based on evidence).'}
+    ],
+    remedial:{
+      explain:'Think of modals as a spectrum: <strong>MUST</strong> = 100% (obligation from me, or I\'m certain); <strong>SHOULD</strong> = advice (it\'s a good idea); <strong>CAN/COULD</strong> = ability or possibility; <strong>MUSTN\'T</strong> = forbidden; <strong>DON\'T HAVE TO</strong> = optional. Always: modal + base verb (no "to"!).',
+      questions:[
+        {q:'The exam is optional. You _____ take it.', opts:['mustn\'t','don\'t have to','can\'t','shouldn\'t'], ans:1, expl:'Optional = no obligation = don\'t have to. (Mustn\'t would mean you are NOT ALLOWED.)'},
+        {q:'I _____ hear you. Can you speak louder?', opts:['mustn\'t','shouldn\'t','can\'t','wouldn\'t'], ans:2, expl:'Present inability = can\'t. (Couldn\'t would be for past inability.)'}
+      ]
+    }
+  },
+  { // 5 - Clauses
+    dim:5,
+    title:'Clauses: Connecting Ideas',
+    explain:'Clauses combine two ideas into one sentence. Three common patterns: <strong>(1) Relative clauses</strong> — "who" for people, "which" for things, "that" for both, "where" for places (The woman WHO lives next door); <strong>(2) Embedded questions</strong> — word order is SUBJECT + VERB, NOT question order (I don\'t know what he WANTS, NOT what does he want); <strong>(3) Noun clauses</strong> — "that" after verbs of thinking/saying (I think THAT he is right). The most common mistake is keeping question word order inside a statement.',
+    examples:[
+      {w:'I don\'t know what does he want.', r:'I don\'t know what he wants.'},
+      {w:'The book who I read was good.', r:'The book that I read was good.'}
+    ],
+    questions:[
+      {q:'Can you tell me _____?', opts:['where is the station','where the station is','where does the station','where the station'], ans:1, expl:'Embedded question = normal word order (subject + verb). NOT question order.'},
+      {q:'The person _____ called you left a message.', opts:['which','what','who','where'], ans:2, expl:'"Person" = human → "who" (or "that"). "Which" is for things.'},
+      {q:'I\'m not sure _____.', opts:['what time is it','what time it is','what time does it','what it is time'], ans:1, expl:'Inside "I\'m not sure," the question becomes a statement: what time IT IS.'},
+      {q:'The city _____ I was born has changed a lot.', opts:['who','which','where','what'], ans:2, expl:'"City" = place → "where" for locations in relative clauses.'}
+    ],
+    remedial:{
+      explain:'For embedded questions, just think: <strong>"Can you tell me... WHAT TIME IT IS?"</strong> The question word stays at the front, but the verb goes back to normal position (subject then verb). For relative clauses: <strong>WHO</strong> = person, <strong>WHERE</strong> = place, <strong>WHICH/THAT</strong> = thing.',
+      questions:[
+        {q:'Do you know _____?', opts:['why is he late','why he is late','why does he late','why he late'], ans:1, expl:'Embedded question: "why he is late" = normal order (subject + verb).'},
+        {q:'This is the restaurant _____ we had our first date.', opts:['who','which','where','what'], ans:2, expl:'"Restaurant" = place → "where." The restaurant WHERE something happened.'}
+      ]
+    }
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+var diagIdx = 0;
+var diagAnswers = {};     // {dimIndex: [bool, bool]} — per-question correctness
+var diagScores = {};      // {dimIndex: 0-100} — percentage score
+
+var pathDims = [];        // ordered dim indices to study (high-priority first)
+var skippedDims = [];     // dim indices skipped (score >= 85)
+var pathIdx = 0;          // current position in pathDims
+
+var modQIdx = 0;          // current question index (0-3 for normal, 4-5 for remedial)
+var modStreak = 0;        // positive=correct streak, negative=wrong streak
+var modCorrect = 0;       // total correct in current module
+var modRemedial = false;  // whether remedial mode is active
+var modScores = {};       // {dimIndex: percentage} — per-module final scores
+var modCompleted = {};    // {dimIndex: true} — completed modules
+var modFastTracked = {};  // {dimIndex: true} — fast-tracked modules
+var modHadRemedial = {};  // {dimIndex: true} — modules that needed remedial
+var modAnswers = [];      // [{chosen, correct}] — per-question answers for back-nav
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showSlide(id) {
+  var slides = document.querySelectorAll('.slide');
+  for (var i = 0; i < slides.length; i++) { slides[i].classList.remove('active'); }
+  var el = document.getElementById(id);
+  if (el) { el.classList.add('active'); }
+}
+
+// ============================================================
+// DIAGNOSTIC
+// ============================================================
+function startDiag() {
+  diagIdx = 0;
+  diagAnswers = {};
+  diagScores = {};
+  showDiagQuestion();
+  showSlide('s-diag');
+}
+
+function showDiagQuestion() {
+  if (diagIdx >= DIAG.length) { finishDiagnostic(); return; }
+  var dq = DIAG[diagIdx];
+  var dim = DIMS[dq.dim];
+  document.getElementById('diagProgress').textContent = (diagIdx + 1) + ' / ' + DIAG.length;
+  var tag = document.getElementById('diagDimTag');
+  tag.textContent = dim.icon + ' ' + dim.name;
+  tag.style.background = dim.color + '18';
+  tag.style.color = dim.color;
+  document.getElementById('diagQuestion').textContent = dq.q;
+  var h = '';
+  for (var i = 0; i < dq.opts.length; i++) {
+    var letter = String.fromCharCode(65 + i); // A, B, C, D
+    h += '<button class="opt-btn" onclick="answerDiag(' + i + ')">' + letter + ') ' + dq.opts[i] + '</button>';
+  }
+  document.getElementById('diagOptions').innerHTML = h;
+}
+
+function answerDiag(idx) {
+  var dq = DIAG[diagIdx];
+  var isCorrect = (idx === dq.ans);
+  // Initialize dim answers array
+  if (!diagAnswers[dq.dim]) { diagAnswers[dq.dim] = []; }
+  diagAnswers[dq.dim].push(isCorrect);
+  diagIdx++;
+  showDiagQuestion();
+}
+
+function finishDiagnostic() {
+  // Calculate scores per dimension
+  for (var d = 0; d < DIMS.length; d++) {
+    var answers = diagAnswers[d] || [];
+    var correct = 0;
+    for (var i = 0; i < answers.length; i++) { if (answers[i]) { correct++; } }
+    diagScores[d] = answers.length > 0 ? Math.round((correct / answers.length) * 100) : 0;
+  }
+  // Build path
+  pathDims = [];
+  skippedDims = [];
+  var hiPri = [], normPri = [];
+  for (var d = 0; d < DIMS.length; d++) {
+    var sc = diagScores[d];
+    if (sc >= 85) { skippedDims.push(d); }
+    else if (sc < 60) { hiPri.push(d); }
+    else { normPri.push(d); }
+  }
+  pathDims = hiPri.concat(normPri);
+  pathIdx = 0;
+  modScores = {};
+  modCompleted = {};
+  modFastTracked = {};
+  modHadRemedial = {};
+  renderReport();
+  showSlide('s-report');
+}
+
+// ============================================================
+// REPORT
+// ============================================================
+function renderReport() {
+  renderRadar();
+  renderReportTable();
+}
+
+function renderRadar() {
+  var cx = 140, cy = 140, maxR = 100;
+  var angles = [-90, -30, 30, 90, 150, 210]; // degrees, 0=top, clockwise
+
+  function pt(angleDeg, r) {
+    var rad = angleDeg * Math.PI / 180;
+    return {
+      x: Math.round(cx + r * Math.cos(rad)),
+      y: Math.round(cy + r * Math.sin(rad))
+    };
+  }
+
+  // Grid hexagons (3 levels)
+  var gridPaths = [];
+  for (var level = 1; level <= 3; level++) {
+    var r = maxR * level / 3;
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var p = pt(angles[i], r);
+      pts.push(p.x + ',' + p.y);
+    }
+    pts.push(pts[0]); // close polygon
+    gridPaths.push('<polygon points="' + pts.join(' ') + '" fill="none" stroke="#e2e8f0" stroke-width="1"/>');
+  }
+
+  // Axis lines
+  var axisLines = '';
+  for (var i = 0; i < 6; i++) {
+    var p = pt(angles[i], maxR);
+    axisLines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x + '" y2="' + p.y + '" stroke="#f1f5f9" stroke-width="1"/>';
+  }
+
+  // Data polygon
+  var dataPts = [];
+  for (var i = 0; i < 6; i++) {
+    var sc = diagScores[i] || 0;
+    var r = Math.max(sc / 100 * maxR, 5); // min 5px so 0% is visible
+    var p = pt(angles[i], r);
+    dataPts.push(p.x + ',' + p.y);
+  }
+  dataPts.push(dataPts[0]);
+
+  // Labels
+  var labels = '';
+  for (var i = 0; i < 6; i++) {
+    var p = pt(angles[i], maxR + 24);
+    var dim = DIMS[i];
+    var sc = diagScores[i] || 0;
+    labels += '<text x="' + p.x + '" y="' + p.y + '" text-anchor="middle" font-size="12" font-weight="600" fill="' + dim.color + '">' + dim.icon + ' ' + sc + '%</text>';
+  }
+
+  var svg = '<svg viewBox="0 0 280 310" width="280" height="310" xmlns="http://www.w3.org/2000/svg">';
+  svg += axisLines;
+  svg += gridPaths.join('');
+  svg += '<polygon points="' + dataPts.join(' ') + '" fill="rgba(37,99,235,0.15)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>';
+  // Dots on data points
+  for (var i = 0; i < 6; i++) {
+    var sc = diagScores[i] || 0;
+    var r = Math.max(sc / 100 * maxR, 5);
+    var dp = pt(angles[i], r);
+    svg += '<circle cx="' + dp.x + '" cy="' + dp.y + '" r="4" fill="#2563eb"/>';
+  }
+  svg += labels;
+  svg += '</svg>';
+  document.getElementById('radarWrap').innerHTML = svg;
+}
+
+function renderReportTable() {
+  var h = '<thead><tr><th>Dimension</th><th>Score</th><th>Status</th></tr></thead><tbody>';
+  for (var d = 0; d < DIMS.length; d++) {
+    var sc = diagScores[d] || 0;
+    var badge, badgeCls;
+    if (sc >= 85) { badge = '✅ Mastered'; badgeCls = 'tag-good'; }
+    else if (sc >= 60) { badge = '🟡 Review'; badgeCls = 'tag-ok'; }
+    else { badge = '🔴 Priority'; badgeCls = 'tag-hi'; }
+    h += '<tr>';
+    h += '<td><strong>' + DIMS[d].icon + ' ' + DIMS[d].name + '</strong> <span style="font-size:11px;color:#94a3b8;">(' + DIMS[d].cn + ')</span></td>';
+    h += '<td class="rt-score" style="color:' + DIMS[d].color + ';">' + sc + '%</td>';
+    h += '<td class="rt-badge ' + badgeCls + '">' + badge + '</td>';
+    h += '</tr>';
+  }
+  h += '</tbody>';
+  document.getElementById('reportTable').innerHTML = h;
+}
+
+// ============================================================
+// PATH MAP
+// ============================================================
+function renderPath() {
+  if (pathDims.length === 0 && skippedDims.length === 6) {
+    // All mastered
+    document.getElementById('pathSummary').textContent = '🎉 Amazing! You\'ve mastered all 6 dimensions.';
+    document.getElementById('pathList').innerHTML = '<div class="text-center" style="padding:40px;color:#16a34a;font-size:16px;">All grammar dimensions above 85% — no modules to study!</div>';
+    document.getElementById('btnStartPath').style.display = 'none';
+  } else {
+    document.getElementById('pathSummary').textContent = skippedDims.length + ' dimension(s) skipped (already mastered). ' + pathDims.length + ' module(s) to study. High-priority modules listed first.';
+    document.getElementById('btnStartPath').style.display = 'inline-block';
+    var h = '';
+    // Show path modules
+    for (var i = 0; i < pathDims.length; i++) {
+      var dim = DIMS[pathDims[i]];
+      var sc = diagScores[dim.id] || 0;
+      var badgeCls = sc < 60 ? 'tag-hi' : 'tag-ok';
+      var badgeText = sc < 60 ? '🔴 Priority' : '🟡 Normal';
+      var cardCls = 'path-card';
+      if (modCompleted[dim.id]) { cardCls += ' completed'; badgeCls = 'tag-good'; badgeText = '✅ Done'; }
+      else if (i === pathIdx && !modCompleted[dim.id]) { cardCls += ' active'; }
+      if (modFastTracked[dim.id]) { badgeText = '⚡ Fast-Tracked'; badgeCls = 'tag-good'; }
+      h += '<div class="' + cardCls + '">';
+      h += '<div class="path-num">' + (i + 1) + '</div>';
+      h += '<div class="path-detail"><div class="pd-name">' + dim.icon + ' ' + dim.name + ' <span style="font-size:11px;color:#94a3b8;">(' + dim.cn + ')</span></div>';
+      h += '<div class="pd-desc">' + dim.desc + '</div></div>';
+      h += '<span class="path-badge ' + badgeCls + '">' + badgeText + '</span>';
+      h += '</div>';
+    }
+    // Show skipped
+    for (var i = 0; i < skippedDims.length; i++) {
+      var dim = DIMS[skippedDims[i]];
+      h += '<div class="path-card skipped">';
+      h += '<div class="path-num">—</div>';
+      h += '<div class="path-detail"><div class="pd-name">' + dim.icon + ' ' + dim.name + ' <span style="font-size:11px;color:#94a3b8;">(' + dim.cn + ')</span></div>';
+      h += '<div class="pd-desc">' + dim.desc + '</div></div>';
+      h += '<span class="path-badge tag-skip">✅ Mastered</span>';
+      h += '</div>';
+    }
+    document.getElementById('pathList').innerHTML = h;
+  }
+  showSlide('s-path');
+}
+
+// ============================================================
+// MODULE LEARNING
+// ============================================================
+function startPath() {
+  // Find next uncompleted module
+  pathIdx = 0;
+  for (var i = 0; i < pathDims.length; i++) {
+    if (!modCompleted[pathDims[i]]) { pathIdx = i; break; }
+  }
+  if (pathIdx >= pathDims.length) {
+    // All done
+    renderMastery();
+    return;
+  }
+  startModule();
+}
+
+function getCurrentModule() {
+  var dimId = pathDims[pathIdx];
+  for (var i = 0; i < MODULES.length; i++) {
+    if (MODULES[i].dim === dimId) { return MODULES[i]; }
+  }
+  return null;
+}
+
+function startModule() {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var dim = DIMS[mod.dim];
+  modQIdx = 0;
+  modStreak = 0;
+  modCorrect = 0;
+  modRemedial = false;
+  modAnswers = [];
+
+  document.getElementById('learnTitle').textContent = dim.icon + ' ' + mod.title;
+  document.getElementById('learnStep').textContent = 'Module ' + (pathIdx + 1) + ' of ' + pathDims.length;
+  document.getElementById('learnPhase1').style.display = 'block';
+  document.getElementById('learnPhase2').style.display = 'none';
+  document.getElementById('phaseLabel').textContent = 'STEP 1: Understand';
+  document.getElementById('modExplain').innerHTML = mod.explain;
+  document.getElementById('remedialBox').style.display = 'none';
+
+  var exH = '';
+  for (var i = 0; i < mod.examples.length; i++) {
+    exH += '<div class="mod-ex wrong">✗ ' + mod.examples[i].w + '</div>';
+    exH += '<div class="mod-ex right">✓ ' + mod.examples[i].r + '</div>';
+  }
+  document.getElementById('modExamples').innerHTML = exH;
+  // Reset button in case finishModule() overrode it to "Continue to Next Module"
+  var btp = document.getElementById('btnToPractice');
+  if (btp) { btp.textContent = 'Start Practice →'; btp.onclick = startPractice; }
+  showSlide('s-learn');
+}
+
+function startPractice() {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  document.getElementById('learnPhase1').style.display = 'none';
+  document.getElementById('learnPhase2').style.display = 'block';
+  modQIdx = 0;
+  modStreak = 0;
+  modCorrect = 0;
+  modRemedial = false;
+  modAnswers = [];
+  document.getElementById('remedialBox').style.display = 'none';
+  showModQuestion();
+}
+
+function showModQuestion() {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var questions = modRemedial ? mod.remedial.questions : mod.questions;
+  if (modQIdx >= questions.length) {
+    finishModule();
+    return;
+  }
+  var q = questions[modQIdx];
+  // Update step label
+  var phaseLabel = document.getElementById('phaseLabel');
+  if (modRemedial) {
+    phaseLabel.textContent = '📖 EXTRA PRACTICE — Q' + (modQIdx + 1) + ' of ' + questions.length;
+  } else {
+    phaseLabel.textContent = 'STEP 2: Practice — Q' + (modQIdx + 1) + ' of ' + questions.length;
+  }
+  document.getElementById('modQuestion').textContent = q.q;
+
+  var prev = modAnswers[modQIdx];
+  var fb = document.getElementById('modFeedback');
+
+  // Render option buttons
+  var h = '';
+  for (var i = 0; i < q.opts.length; i++) {
+    var letter = String.fromCharCode(65 + i);
+    var style = '';
+    if (prev && i === q.ans) {
+      style = ' style="border-color:#16a34a;background:#f0fdf4;"';
+    } else if (prev && i === prev.chosen && !prev.correct) {
+      style = ' style="border-color:#dc2626;"';
+    }
+    h += '<button class="opt-btn" id="modOpt' + i + '" onclick="answerModQuestion(' + i + ')"' + style + '>' + letter + ') ' + q.opts[i] + '</button>';
+  }
+  document.getElementById('modOptions').innerHTML = h;
+
+  // Show feedback and nav if previously answered
+  if (prev) {
+    if (prev.correct) {
+      fb.className = 'mod-feedback correct';
+      fb.textContent = '✅ Correct! ' + q.expl;
+    } else {
+      fb.className = 'mod-feedback wrong';
+      fb.textContent = '✗ Not quite. The correct answer is ' + String.fromCharCode(65 + q.ans) + '. ' + q.expl;
+    }
+    fb.style.display = 'block';
+    showModNav();
+  } else {
+    fb.className = 'mod-feedback';
+    fb.textContent = '';
+    fb.style.display = 'none';
+    var oldNav = document.getElementById('modNav');
+    if (oldNav) oldNav.remove();
+  }
+
+  // Remedial box: only show if user previously got THIS remedial Q wrong
+  var remBox2 = document.getElementById('remedialBox');
+  if (modRemedial && prev && !prev.correct) {
+    remBox2.style.display = 'block';
+  } else if (modRemedial && !prev) {
+    remBox2.style.display = 'none';
+  }
+}
+
+function answerModQuestion(idx) {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var questions = modRemedial ? mod.remedial.questions : mod.questions;
+  var q = questions[modQIdx];
+  var isCorrect = (idx === q.ans);
+  var fb = document.getElementById('modFeedback');
+
+  // If re-answering (changing a previous answer), adjust score
+  var prevAns = modAnswers[modQIdx];
+  if (prevAns) {
+    if (prevAns.correct && !isCorrect) { modCorrect = Math.max(modCorrect - 1, 0); }
+    if (!prevAns.correct && isCorrect) { modCorrect++; }
+  }
+
+  // Highlight chosen option
+  for (var i = 0; i < q.opts.length; i++) {
+    var btn = document.getElementById('modOpt' + i);
+    if (btn) { btn.disabled = true; }
+  }
+  var chosenBtn = document.getElementById('modOpt' + idx);
+  if (chosenBtn) { chosenBtn.style.borderColor = isCorrect ? '#16a34a' : '#dc2626'; }
+
+  // Show feedback
+  if (isCorrect) {
+    fb.className = 'mod-feedback correct';
+    fb.textContent = '✅ Correct! ' + q.expl;
+    if (!prevAns) {
+      modStreak = Math.max(modStreak + 1, 1);
+      modCorrect++;
+    }
+  } else {
+    fb.className = 'mod-feedback wrong';
+    fb.textContent = '✗ Not quite. The correct answer is ' + String.fromCharCode(65 + q.ans) + '. ' + q.expl;
+    if (!prevAns) {
+      modStreak = Math.min(modStreak - 1, -1);
+    }
+  }
+  fb.style.display = 'block';
+
+  // Store answer (before modQIdx changes)
+  modAnswers[modQIdx] = { chosen: idx, correct: isCorrect };
+
+  // Show remedial explanation only if user answers a remedial Q wrong
+  if (modRemedial && !isCorrect) {
+    document.getElementById('remedialBox').style.display = 'block';
+  }
+
+  // Show manual navigation buttons
+  showModNav();
+
+  // Check adaptive triggers (don't auto-advance, let user click)
+  if (!modRemedial && modStreak >= 3 && (modQIdx + 1) < questions.length) {
+    modFastTracked[mod.dim] = true;
+    fb.textContent += ' ⚡ Fast Track qualified! You can skip ahead.';
+  }
+
+  if (!modRemedial && modStreak <= -2) {
+    modRemedial = true;
+    modHadRemedial[mod.dim] = true;
+    var remBox = document.getElementById('remedialBox');
+    remBox.innerHTML = '<div class="rem-title">📖 Let\'s Review This More Carefully</div><div style="font-size:13px;color:#475569;line-height:1.6;">' + mod.remedial.explain + '</div>';
+    remBox.style.display = 'none';  // Hide until user answers remedial Q wrong
+    modStreak = 0;
+    modCorrect = 0;   // Reset score for remedial round
+    modQIdx = -1;     // Next click goes to remedial Q0
+    modAnswers = [];  // Reset answers for remedial round
+    showModNav();     // Refresh nav buttons
+  }
+}
+
+// ============================================================
+// MODULE NAVIGATION BUTTONS
+// ============================================================
+function showModNav() {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var questions = modRemedial ? mod.remedial.questions : mod.questions;
+  var isLast = (modQIdx >= questions.length - 1);
+  var fastTracked = !modRemedial && modFastTracked[mod.dim];
+
+  // Remove existing nav if any
+  var oldNav = document.getElementById('modNav');
+  if (oldNav) oldNav.remove();
+
+  var h = '<div class="flex-center mt-16" id="modNav">';
+  if (modQIdx > 0) {
+    h += '<button class="btn btn-secondary btn-sm" onclick="modNavBack()">← Previous</button>';
+  }
+  if (isLast) {
+    h += '<button class="btn btn-success btn-sm" onclick="modNavFinish()">✓ Finish Module</button>';
+  } else {
+    h += '<button class="btn btn-primary btn-sm" onclick="modNavNext()">Next →</button>';
+    if (fastTracked) {
+      h += '<button class="btn btn-warning btn-sm" onclick="modNavFinish()">⚡ Skip Ahead</button>';
+    }
+  }
+  h += '</div>';
+
+  var fb = document.getElementById('modFeedback');
+  fb.insertAdjacentHTML('afterend', h);
+}
+
+function modNavNext() {
+  modQIdx++;
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var questions = modRemedial ? mod.remedial.questions : mod.questions;
+  if (modQIdx >= questions.length) {
+    finishModule();
+  } else {
+    showModQuestion();
+  }
+}
+
+function modNavBack() {
+  if (modQIdx > 0) {
+    modQIdx--;
+    showModQuestion();
+  }
+}
+
+function modNavFinish() {
+  finishModule();
+}
+
+function finishModule() {
+  var mod = getCurrentModule();
+  if (!mod) { return; }
+  var questions = modRemedial ? mod.remedial.questions : mod.questions;
+  var total = questions.length;
+  var score = Math.round((modCorrect / total) * 100);
+  modScores[mod.dim] = score;
+  modCompleted[mod.dim] = true;
+
+  // Find next uncompleted module
+  var nextIdx = -1;
+  for (var i = 0; i < pathDims.length; i++) {
+    if (!modCompleted[pathDims[i]]) { nextIdx = i; break; }
+  }
+
+  if (nextIdx >= 0) {
+    pathIdx = nextIdx;
+    // Brief completion message then next module
+    document.getElementById('learnPhase1').style.display = 'block';
+    document.getElementById('learnPhase2').style.display = 'none';
+    document.getElementById('phaseLabel').textContent = '✅ Module Complete — Score: ' + score + '%';
+    var dim = DIMS[mod.dim];
+    document.getElementById('modExplain').innerHTML =
+      '<div style="text-align:center;font-size:16px;font-weight:600;color:#16a34a;">' + dim.icon + ' ' + dim.name + ': ' + score + '%</div>' +
+      '<div style="text-align:center;font-size:13px;color:#64748b;margin-top:4px;">' +
+      (modFastTracked[mod.dim] ? '⚡ Fast-Tracked' : (modHadRemedial[mod.dim] ? '📖 Completed with extra support' : '✅ Completed')) +
+      '</div>';
+    document.getElementById('modExamples').innerHTML = '';
+    document.getElementById('btnToPractice').textContent = 'Continue to Next Module →';
+    document.getElementById('btnToPractice').onclick = function() { startModule(); };
+    document.getElementById('remedialBox').style.display = 'none';
+  } else {
+    // All modules done
+    renderMastery();
+  }
+}
+
+function backToPath() {
+  renderPath();
+}
+
+// ============================================================
+// MASTERY DASHBOARD
+// ============================================================
+function renderMastery() {
+  // Compute totals
+  var totalSc = 0, cnt = 0;
+  for (var d = 0; d < DIMS.length; d++) {
+    if (skippedDims.indexOf(d) >= 0) {
+      totalSc += 100; // skipped = perfect
+      cnt++;
+    } else if (modScores[d] !== undefined) {
+      totalSc += modScores[d];
+      cnt++;
+    }
+  }
+  var overall = cnt > 0 ? Math.round(totalSc / cnt) : 0;
+
+  // Header
+  var emoji, grade, gradeColor;
+  if (overall >= 90) { emoji = '🏆'; grade = 'Grammar Master'; gradeColor = '#16a34a'; }
+  else if (overall >= 75) { emoji = '🌟'; grade = 'Strong Performer'; gradeColor = '#2563eb'; }
+  else if (overall >= 60) { emoji = '📚'; grade = 'Solid Foundation'; gradeColor = '#d97706'; }
+  else { emoji = '🌱'; grade = 'Growing Learner'; gradeColor = '#dc2626'; }
+
+  document.getElementById('masteryHeader').innerHTML =
+    '<div class="mh-emoji">' + emoji + '</div>' +
+    '<div class="mh-grade" style="color:' + gradeColor + ';">' + grade + '</div>' +
+    '<div style="font-size:14px;color:#64748b;">Overall: ' + overall + '% across ' + cnt + ' dimensions</div>';
+
+  // Summary cards
+  var masteredCount = skippedDims.length;
+  var completedCount = Object.keys(modCompleted).length;
+  var fastCount = Object.keys(modFastTracked).length;
+  var remedialCount = Object.keys(modHadRemedial).length;
+  document.getElementById('masterySummary').innerHTML =
+    '<div class="mastery-card"><div class="mc-val" style="color:#16a34a;">' + masteredCount + '</div><div class="mc-label">Pre-Mastered</div></div>' +
+    '<div class="mastery-card"><div class="mc-val" style="color:#2563eb;">' + completedCount + '</div><div class="mc-label">Modules Completed</div></div>' +
+    '<div class="mastery-card"><div class="mc-val" style="color:#0891b2;">' + fastCount + '</div><div class="mc-label">⚡ Fast-Tracked</div></div>' +
+    '<div class="mastery-card"><div class="mc-val" style="color:#d97706;">' + remedialCount + '</div><div class="mc-label">📖 Needed Support</div></div>';
+
+  // Detail table
+  var th = '<thead><tr><th>Dimension</th><th>Diagnostic</th><th>Final</th><th>Status</th></tr></thead><tbody>';
+  for (var d = 0; d < DIMS.length; d++) {
+    var diagSc = diagScores[d] || 0;
+    var finalSc;
+    var status;
+    if (skippedDims.indexOf(d) >= 0) {
+      finalSc = 100;
+      status = '<span class="tag tag-skip">✅ Pre-Mastered</span>';
+    } else if (modScores[d] !== undefined) {
+      finalSc = modScores[d];
+      if (modFastTracked[d]) { status = '<span class="tag tag-good">⚡ Fast-Tracked</span>'; }
+      else if (modHadRemedial[d]) { status = '<span class="tag tag-ok">📖 With Support</span>'; }
+      else { status = '<span class="tag tag-good">✅ Completed</span>'; }
+    } else {
+      finalSc = '—';
+      status = '<span class="tag tag-hi">Not attempted</span>';
+    }
+    var change = (finalSc !== '—') ? (finalSc - diagSc) : 0;
+    var changeStr = change > 0 ? ' (+' + change + ')' : (change < 0 ? ' (' + change + ')' : '');
+    th += '<tr>';
+    th += '<td><strong>' + DIMS[d].icon + ' ' + DIMS[d].name + '</strong> <span style="font-size:11px;color:#94a3b8;">(' + DIMS[d].cn + ')</span></td>';
+    th += '<td style="text-align:center;">' + diagSc + '%</td>';
+    th += '<td style="text-align:center;font-weight:700;">' + finalSc + '%' + changeStr + '</td>';
+    th += '<td>' + status + '</td>';
+    th += '</tr>';
+  }
+  th += '</tbody>';
+  document.getElementById('masteryTable').innerHTML = th;
+
+  // Insight
+  var insight = '';
+  if (fastCount >= 3) {
+    insight = '<strong>💡 Insight:</strong> You fast-tracked through ' + fastCount + ' modules — you learn quickly once you focus. Consider more challenging material to stay engaged.';
+  } else if (remedialCount >= 2) {
+    insight = '<strong>💡 Insight:</strong> You needed extra support on ' + remedialCount + ' dimensions. That\'s normal — grammar takes time. Review these areas again in a few days for best retention.';
+  } else {
+    insight = '<strong>💡 Insight:</strong> You have a balanced learning profile. ' + (skippedDims.length > 0 ? 'Your pre-mastered areas give you a strong foundation to build on.' : 'Consistent practice across all dimensions will solidify your skills.') + '';
+  }
+  document.getElementById('masteryInsight').innerHTML = insight;
+
+  showSlide('s-mastery');
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function resetAll() {
+  diagIdx = 0;
+  diagAnswers = {};
+  diagScores = {};
+  pathDims = [];
+  skippedDims = [];
+  pathIdx = 0;
+  modQIdx = 0;
+  modStreak = 0;
+  modCorrect = 0;
+  modRemedial = false;
+  modScores = {};
+  modCompleted = {};
+  modFastTracked = {};
+  modHadRemedial = {};
+  showSlide('s0');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+showSlide('s0');
+</script>
+
+</body>
+</html>
